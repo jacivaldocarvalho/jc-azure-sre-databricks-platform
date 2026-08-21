@@ -1,0 +1,34 @@
+subscription_id = "00000000-0000-0000-0000-000000000000"
+environment     = "dev"
+location        = "eastus"
+project_name    = "sredatabricks"
+
+vnet_address_space = ["10.0.0.0/16"]
+
+subnets = {
+  databricks = {
+    address_prefixes = ["10.0.1.0/24"]
+    service_endpoints = ["Microsoft.Storage"]
+  }
+  aks = {
+    address_prefixes = ["10.0.2.0/24"]
+    service_endpoints = ["Microsoft.Storage"]
+  }
+  data = {
+    address_prefixes = ["10.0.3.0/24"]
+    service_endpoints = ["Microsoft.Storage", "Microsoft.KeyVault"]
+  }
+  monitoring = {
+    address_prefixes = ["10.0.4.0/24"]
+  }
+  private_endpoints = {
+    address_prefixes = ["10.0.5.0/24"]
+    private_endpoint_network_policies = "Enabled"
+  }
+}
+
+tags = {
+  Environment = "dev"
+  Project     = "SRE-Databricks"
+  ManagedBy   = "Terraform"
+}
