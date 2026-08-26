@@ -45,7 +45,7 @@ clean:
 
 terraform-init:
 	@echo "Initializing Terraform (dev)..."
-	@cd terraform/environments/dev && terraform init
+	@cd terraform/environments/dev && terraform init -reconfigure
 
 terraform-plan:
 	@echo "Planning Terraform changes (dev)..."

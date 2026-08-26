@@ -185,11 +185,19 @@ Após a conclusão da configuração inicial, as próximas etapas previstas são
 6. Implementação de CI/CD
 7. Evolução da segurança e governança da plataforma
 
+
 ## Status do Projeto
 
-O projeto está atualmente na **Fase 0 — Fundação e Configuração Inicial**.
+O projeto está atualmente na Fase 2 — **Databricks Workspace e Integração**.
 
-Esta fase estabelece as convenções, ferramentas e estrutura necessárias para as etapas de infraestrutura e automação que serão implementadas posteriormente.
+Esta fase tem como objetivo provisionar o ambiente Databricks e estabelecer sua integração com o armazenamento de dados, preparando a infraestrutura necessária para desenvolvimento e processamento de dados.
+
+- Provisionar o Databricks Workspace via Terraform
+- Configurar o Azure Data Lake Storage (ADLS) para armazenamento de dados
+- Estabelecer o Unity Catalog e o metastore
+- Criar o cluster inicial para desenvolvimento
+
+**Validação**: acesso ao workspace, cluster operacional e validação de leitura e escrita no ADLS.
 
 ## Licença
 
