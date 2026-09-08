@@ -1,35 +1,35 @@
 # Azure SRE/Databricks Platform
 
-Projeto voltado à prática de SRE/DevOps em ambiente Azure, com foco em infraestrutura como código, Databricks, CI/CD, observabilidade, segurança e automação.
+A hands-on project focused on **SRE and DevOps practices in Microsoft Azure**, with an emphasis on **Infrastructure as Code (IaC), Databricks, CI/CD, observability, security, and automation**.
 
-## Tecnologias Principais
+## Core Technologies
 
 * Azure Cloud
 * Terraform (Infrastructure as Code)
 * Azure DevOps (CI/CD)
 * Databricks (Data Processing & ML)
 * Kubernetes / AKS
-* Python e Shell Scripting
-* Prometheus e Grafana (Observabilidade)
+* Python and Shell Scripting
+* Prometheus and Grafana (Observability)
 
-## Estrutura do Projeto
+## Project Structure
 
 ```text
 azure-sre-databricks-platform/
 ├── terraform/          # Infrastructure as Code
 ├── azure-devops/       # CI/CD Pipelines
-├── databricks/         # Notebooks e Jobs
-├── monitoring/         # Observabilidade
-├── security/           # RBAC e Políticas
-├── kubernetes/         # Manifests AKS
-├── python/             # Código Python
-├── scripts/             # Automações
-└── docs/               # Documentação
+├── databricks/         # Notebooks and Jobs
+├── monitoring/         # Observability
+├── security/           # RBAC and Policies
+├── kubernetes/         # AKS Manifests
+├── python/             # Python Code
+├── scripts/            # Automation Scripts
+└── docs/               # Documentation
 ```
 
-## Pré-requisitos
+## Prerequisites
 
-Antes de iniciar, instale:
+Before getting started, install:
 
 * Git
 * Terraform >= 1.5.0
@@ -39,89 +39,89 @@ Antes de iniciar, instale:
 * kubectl
 * Make
 
-Também é necessário ter acesso a uma assinatura Azure com permissões suficientes para as próximas fases do projeto.
+You also need access to an **Azure subscription** with sufficient permissions for the upcoming phases of the project.
 
-## Configuração Inicial
+## Initial Setup
 
-### 1. Clonar o repositório
+### 1. Clone the Repository
 
 ```bash
 git clone <repository-url>
 cd azure-sre-databricks-platform
 ```
 
-### 2. Configurar as variáveis de ambiente
+### 2. Configure Environment Variables
 
-Crie o arquivo local de variáveis a partir do exemplo:
+Create your local environment file from the provided example:
 
 ```bash
 cp .env.example .env
 ```
 
-Edite o arquivo `.env` e preencha as credenciais e configurações necessárias para o ambiente local.
+Edit the `.env` file and provide the credentials and configuration required for your local environment.
 
-> **Importante:** o arquivo `.env` não deve ser versionado. Nunca adicione credenciais, tokens, secrets ou chaves privadas ao repositório.
+> **Important:** The `.env` file must not be committed to version control. Never add credentials, tokens, secrets, or private keys to the repository.
 
-### 3. Autenticar na Azure
+### 3. Authenticate with Azure
 
 ```bash
 az login
 az account set --subscription <subscription-id>
 ```
 
-Confirme a assinatura selecionada:
+Confirm the selected subscription:
 
 ```bash
 az account show
 ```
 
-### 4. Inicializar o projeto
+### 4. Initialize the Project
 
-Execute:
+Run:
 
 ```bash
 make init
 ```
 
-O comando prepara a configuração local necessária para o desenvolvimento e cria o arquivo `.env` caso ele ainda não exista.
+This command prepares the local configuration required for development and creates the `.env` file if it does not already exist.
 
-## Fluxo de Branches
+## Branching Strategy
 
-O projeto utiliza o seguinte modelo:
+The project uses the following branching model:
 
-* `main` — código estável e pronto para produção
-* `develop` — branch de integração e desenvolvimento
-* `feature/*` — desenvolvimento de novas funcionalidades
-* `hotfix/*` — correções urgentes
+* `main` — stable, production-ready code
+* `develop` — integration and development branch
+* `feature/*` — development of new features
+* `hotfix/*` — urgent fixes
 
-Exemplo:
+Example:
 
 ```bash
 git checkout develop
-git checkout -b feature/nome-da-feature
+git checkout -b feature/feature-name
 ```
 
-Alterações devem ser desenvolvidas em branches específicas e integradas à `develop` por meio de Pull Requests.
+Changes should be developed in dedicated branches and merged into `develop` through Pull Requests.
 
-## Comandos Úteis
+## Useful Commands
 
-| Comando                  | Descrição                                                        |
-| ------------------------ | ---------------------------------------------------------------- |
-| `make help`              | Lista os comandos disponíveis                                    |
-| `make init`              | Inicializa a configuração local do projeto                       |
-| `make validate`          | Valida as configurações Terraform do ambiente de desenvolvimento |
-| `make format`            | Formata arquivos Terraform e Python                              |
-| `make clean`             | Remove arquivos temporários e artefatos locais                   |
-| `make terraform-init`    | Inicializa o Terraform no ambiente `dev`                         |
-| `make terraform-plan`    | Gera o plano de alterações no ambiente `dev`                     |
-| `make terraform-apply`   | Aplica as alterações no ambiente `dev`                           |
-| `make terraform-destroy` | Destrói os recursos gerenciados pelo Terraform no ambiente `dev` |
+| Command                  | Description                                                           |
+| ------------------------ | --------------------------------------------------------------------- |
+| `make help`              | Lists the available commands                                          |
+| `make init`              | Initializes the local project configuration                           |
+| `make validate`          | Validates the Terraform configuration for the development environment |
+| `make format`            | Formats Terraform and Python files                                    |
+| `make clean`             | Removes temporary files and local artifacts                           |
+| `make terraform-init`    | Initializes Terraform in the `dev` environment                        |
+| `make terraform-plan`    | Generates the Terraform execution plan for the `dev` environment      |
+| `make terraform-apply`   | Applies infrastructure changes to the `dev` environment               |
+| `make terraform-destroy` | Destroys Terraform-managed resources in the `dev` environment         |
 
-> **Atenção:** `terraform-apply` e `terraform-destroy` podem alterar ou remover recursos Azure. Revise sempre o resultado do `terraform plan` antes de aplicar alterações.
+> **Warning:** `terraform-apply` and `terraform-destroy` can modify or remove Azure resources. Always review the output of `terraform plan` before applying changes.
 
-## Validação Inicial
+## Initial Validation
 
-Após a configuração, valide o ambiente com:
+After completing the setup, validate the environment with:
 
 ```bash
 make help
@@ -129,16 +129,16 @@ make validate
 make format
 ```
 
-Para verificar o estado do repositório:
+To check the repository status:
 
 ```bash
 git status
 git branch
 ```
 
-## Ambientes
+## Environments
 
-A infraestrutura será organizada por ambientes:
+The infrastructure is organized into separate environments:
 
 ```text
 terraform/
@@ -148,57 +148,56 @@ terraform/
     └── prod/
 ```
 
-Cada ambiente possui sua própria configuração Terraform e será evoluído de forma independente ao longo das fases do projeto.
+Each environment has its own Terraform configuration and will evolve independently throughout the different phases of the project.
 
-## Segurança
+## Security
 
-As seguintes práticas devem ser mantidas durante o desenvolvimento:
+The following practices should be maintained throughout development:
 
-* Nunca versionar o arquivo `.env`
-* Nunca armazenar secrets diretamente em arquivos Terraform
-* Nunca versionar tokens, passwords ou chaves privadas
-* Utilizar mecanismos seguros de gerenciamento de secrets conforme a evolução da plataforma
-* Revisar alterações de infraestrutura antes de executar `terraform apply`
-* Manter o princípio de menor privilégio nas permissões Azure
+* Never commit the `.env` file
+* Never store secrets directly in Terraform files
+* Never commit tokens, passwords, or private keys
+* Use secure secret management mechanisms as the platform evolves
+* Review infrastructure changes before running `terraform apply`
+* Follow the principle of least privilege for Azure permissions
 
-## Documentação
+## Documentation
 
-A documentação complementar está organizada em `docs/`:
+Additional documentation is organized under `docs/`:
 
 ```text
 docs/
-├── architecture/       # Arquitetura e decisões arquiteturais
-├── operations/         # Runbooks e procedimentos operacionais
-├── troubleshooting/    # Guias de troubleshooting
-└── conventions.md      # Convenções do projeto
+├── architecture/       # Architecture and architectural decisions
+├── operations/         # Runbooks and operational procedures
+├── troubleshooting/    # Troubleshooting guides
+└── conventions.md      # Project conventions
 ```
 
-## Próximos Passos
+## Next Steps
 
-Após a conclusão da configuração inicial, as próximas etapas previstas são:
+After completing the initial setup, the planned next steps are:
 
-1. Configuração do backend remoto do Terraform
-2. Provisionamento da rede base (VNet e subnets)
-3. Configuração e deploy do Databricks Workspace
-4. Implementação dos pipelines de dados
-5. Configuração de observabilidade
-6. Implementação de CI/CD
-7. Evolução da segurança e governança da plataforma
+1. Configure the Terraform remote backend
+2. Provision the base network infrastructure (VNet and subnets)
+3. Configure and deploy the Databricks Workspace
+4. Implement data pipelines
+5. Configure observability
+6. Implement CI/CD
+7. Enhance platform security and governance
 
+## Project Status
 
-## Status do Projeto
+The project is currently in **Phase 2 — Databricks Workspace and Integration**.
 
-O projeto está atualmente na Fase 2 — **Databricks Workspace e Integração**.
+The goal of this phase is to provision the Databricks environment and establish its integration with data storage, preparing the infrastructure required for data development and processing.
 
-Esta fase tem como objetivo provisionar o ambiente Databricks e estabelecer sua integração com o armazenamento de dados, preparando a infraestrutura necessária para desenvolvimento e processamento de dados.
+* Provision the Databricks Workspace using Terraform
+* Configure Azure Data Lake Storage (ADLS) for data storage
+* Set up Unity Catalog and the metastore
+* Create the initial development cluster
 
-- Provisionar o Databricks Workspace via Terraform
-- Configurar o Azure Data Lake Storage (ADLS) para armazenamento de dados
-- Estabelecer o Unity Catalog e o metastore
-- Criar o cluster inicial para desenvolvimento
+**Validation:** verify workspace access, confirm that the cluster is operational, and validate read and write operations against ADLS.
 
-**Validação**: acesso ao workspace, cluster operacional e validação de leitura e escrita no ADLS.
-
-## Licença
+## License
 
 MIT
