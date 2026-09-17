@@ -26,3 +26,10 @@ output "nsg_id" {
   description = "ID of the Network Security Group"
   value       = azurerm_network_security_group.main.id
 }
+
+output "nsg_association_ids" {
+  description = "IDs of NSG associations per subnet"
+  value = {
+    for key, assoc in azurerm_subnet_network_security_group_association.associations : key => assoc.id
+  }
+}

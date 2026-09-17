@@ -22,6 +22,11 @@ variable "project_name" {
   default     = "sredatabricks"
 }
 
+variable "storage_account_name" {
+  description = "Name of the storage account for the data lake (globally unique, 3-24 chars, lowercase alphanumeric)"
+  type        = string
+}
+
 variable "vnet_address_space" {
   description = "Address space for VNet"
   type        = list(string)
@@ -34,11 +39,18 @@ variable "subnets" {
     address_prefixes = list(string)
     service_endpoints = optional(list(string))
     private_endpoint_network_policies = optional(string)
+    delegation                        = optional(string)
   }))
   default = {
     databricks = {
       address_prefixes = ["10.0.1.0/24"]
       service_endpoints = ["Microsoft.Storage"]
+      delegation       = "Microsoft.Databricks/workspaces"
+    }
+    databricks_private = {
+      address_prefixes = ["10.0.6.0/24"]
+      service_endpoints = ["Microsoft.Storage"]
+      delegation       = "Microsoft.Databricks/workspaces"
     }
     aks = {
       address_prefixes = ["10.0.2.0/24"]
