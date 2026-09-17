@@ -11,12 +11,30 @@ resource "azurerm_virtual_network" "main" {
 resource "azurerm_subnet" "subnets" {
   for_each = var.subnets
 
-  name                                      = "${var.environment}-${var.project_name}-${each.key}-subnet"
-  resource_group_name                       = var.resource_group_name
-  virtual_network_name                      = azurerm_virtual_network.main.name
-  address_prefixes                          = each.value.address_prefixes
-  service_endpoints                         = each.value.service_endpoints
-  private_endpoint_network_policies_enabled = each.value.private_endpoint_network_policies == "Enabled" ? true : false
+  name                 = "${var.environment}-${var.project_name}-${replace(each.key, "_", "-")}-subnet"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = each.value.address_prefixes
+  service_endpoints    = each.value.service_endpoints
+
+  private_endpoint_network_policies_enabled = (
+    each.value.private_endpoint_network_policies == "Enabled" ? true : false
+  )
+
+  dynamic "delegation" {
+    for_each = each.value.delegation != null ? [each.value.delegation] : []
+    content {
+      name = "databricks-delegation"
+      service_delegation {
+        name = delegation.value
+        actions = [
+          "Microsoft.Network/virtualNetworks/subnets/join/action",
+          "Microsoft.Network/virtualNetworks/subnets/prepareNetworkPolicies/action",
+          "Microsoft.Network/virtualNetworks/subnets/unprepareNetworkPolicies/action",
+        ]
+      }
+    }
+  }
 }
 
 # Network Security Group - Restrictive Default
