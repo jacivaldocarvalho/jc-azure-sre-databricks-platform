@@ -32,6 +32,10 @@ module "datalake" {
 module "databricks" {
   source = "../../modules/databricks"
 
+  providers = {
+    databricks.workspace = databricks.workspace
+  }
+
   resource_group_name               = azurerm_resource_group.main.name
   location                          = var.location
   environment                       = var.environment

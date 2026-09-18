@@ -1,0 +1,29 @@
+# Core data processing
+pyspark[connect]==3.5.3
+delta-spark==3.2.0
+pyarrow==17.0.0
+setuptools>=64.0.0
+
+# Spark Connect dependencies
+# Required by pandera.pyspark, which imports pyspark.sql.connect
+grpcio>=1.48.1
+grpcio-status>=1.48.1
+googleapis-common-protos>=1.56.4
+
+# HTTP client for API ingestion
+requests==2.32.3
+
+# Configuration management
+python-dotenv==1.0.1
+
+# Data validation
+pandera==0.20.4
+
+# Testing
+pytest==8.3.3
+pytest-cov==6.0.0
+pytest-mock==3.14.0
+pytest-spark==0.8.0
+
+# Code quality
+ruff==0.7.1
