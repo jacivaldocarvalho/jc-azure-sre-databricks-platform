@@ -26,9 +26,9 @@ variable "vnet_address_space" {
 variable "subnets" {
   description = "Subnet configurations"
   type = map(object({
-    address_prefixes                   = list(string)
-    service_endpoints                  = optional(list(string))
-    private_endpoint_network_policies  = optional(string)
+    address_prefixes                  = list(string)
+    service_endpoints                 = optional(list(string))
+    private_endpoint_network_policies = optional(string)
     delegation                        = optional(string)
   }))
 }

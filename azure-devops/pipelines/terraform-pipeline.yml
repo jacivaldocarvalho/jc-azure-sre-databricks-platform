@@ -1,0 +1,78 @@
+# Terraform pipeline for infrastructure as code.
+#
+# Stages:
+#   Validate  - fmt check, init, validate
+#   Plan      - terraform plan, publish artifact
+#   Apply     - terraform apply (requires manual approval via Environment)
+#
+# Prerequisites:
+#   - Variable group: jc-azure-sre-common
+#   - Service connection: azure-jc-carvalho
+#   - Environment: jc-azure-sre-databricks (with approval check)
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - terraform/**
+      - azure-devops/**
+      - .azure-pipelines/**
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - terraform/**
+
+variables:
+  - group: jc-azure-sre-common
+  - template: ../templates/variables.yml
+
+stages:
+
+  - stage: Validate
+    displayName: 'Terraform Validate'
+    jobs:
+      - job: Validate
+        displayName: 'Validate'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+          - template: ../templates/terraform-validate.yml
+
+  - stage: Plan
+    displayName: 'Terraform Plan'
+    dependsOn: Validate
+    condition: succeeded()
+    jobs:
+      - job: Plan
+        displayName: 'Plan'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+          - template: ../templates/terraform-plan.yml
+
+  - stage: Apply
+    displayName: 'Terraform Apply (manual approval)'
+    dependsOn: Plan
+    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/develop')))
+    jobs:
+      - deployment: Apply
+        displayName: 'Apply (approved)'
+        environment: 'jc-azure-sre-databricks'
+        pool:
+          vmImage: 'ubuntu-latest'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - template: ../templates/terraform-apply.yml

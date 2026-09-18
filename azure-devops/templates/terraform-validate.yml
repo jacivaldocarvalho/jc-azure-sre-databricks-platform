@@ -1,0 +1,26 @@
+# Validates Terraform code: formatting, initialization, and syntax.
+# Fails fast if the code does not meet the project's standards.
+
+parameters:
+  - name: terraformVersion
+    type: string
+    default: '$(TERRAFORM_VERSION)'
+  - name: workingDirectory
+    type: string
+    default: '$(TERRAFORM_DIR)'
+
+steps:
+  - task: TerraformInstaller@1
+    displayName: 'Install Terraform $(terraformVersion)'
+    inputs:
+      terraformVersion: ${{ parameters.terraformVersion }}
+
+  - script: terraform fmt -check -recursive
+    displayName: 'Terraform fmt (check)'
+    workingDirectory: ${{ parameters.workingDirectory }}/../..
+
+  - script: |
+      terraform init -backend=false -input=false
+      terraform validate
+    displayName: 'Terraform init and validate'
+    workingDirectory: ${{ parameters.workingDirectory }}

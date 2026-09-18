@@ -1,0 +1,53 @@
+# Runs the test suite with coverage reporting.
+# Coverage threshold is set to the current baseline (35%).
+# It will be raised as unit tests are added for the API client,
+# ingestion, and persistence modules.
+
+parameters:
+  - name: pythonVersion
+    type: string
+    default: '$(PYTHON_VERSION)'
+  - name: workingDirectory
+    type: string
+    default: '$(PYTHON_DIR)'
+  - name: coverageThreshold
+    type: number
+    default: 35
+
+steps:
+  - task: UsePythonVersion@0
+    displayName: 'Use Python ${{ parameters.pythonVersion }}'
+    inputs:
+      versionSpec: ${{ parameters.pythonVersion }}
+
+  - script: |
+      python -m pip install --upgrade pip setuptools wheel
+      pip install -r requirements.txt
+    displayName: 'Install dependencies'
+    workingDirectory: ${{ parameters.workingDirectory }}
+
+  - script: |
+      pytest tests/ \
+        --junitxml=test-results.xml \
+        --cov=src \
+        --cov-report=xml:coverage.xml \
+        --cov-report=term-missing \
+        --cov-fail-under=${{ parameters.coverageThreshold }}
+    displayName: 'Run tests with coverage'
+    workingDirectory: ${{ parameters.workingDirectory }}
+
+  - task: PublishTestResults@2
+    displayName: 'Publish test results'
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '**/test-results.xml'
+      searchFolder: ${{ parameters.workingDirectory }}
+      failTaskOnFailedTests: true
+
+  - task: PublishCodeCoverageResults@2
+    displayName: 'Publish coverage results'
+    condition: succeededOrFailed()
+    inputs:
+      summaryFileLocation: '${{ parameters.workingDirectory }}/coverage.xml'
+      pathToSources: '${{ parameters.workingDirectory }}/src'
