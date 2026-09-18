@@ -37,14 +37,14 @@ resource "azurerm_subnet" "subnets" {
   }
 }
 
-# Network Security Group - Restrictive Default
+# Network Security Group - Rules required for Databricks VNet Injection
 resource "azurerm_network_security_group" "main" {
   name                = "${var.environment}-${var.project_name}-nsg"
   location            = var.location
   resource_group_name = var.resource_group_name
   tags                = var.tags
 
-  # Allow Azure Load Balancer health probes (required for AKS)
+  # Allow Azure Load Balancer health probes (required for AKS, keep for future)
   security_rule {
     name                       = "AllowAzureLoadBalancerInbound"
     priority                   = 1000
@@ -57,7 +57,72 @@ resource "azurerm_network_security_group" "main" {
     destination_address_prefix = "*"
   }
 
-  # Deny all other inbound traffic by default
+  # Databricks: Worker to Worker Inbound
+  security_rule {
+    name                       = "databricks-worker-to-worker-inbound"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "VirtualNetwork"
+    destination_address_prefix = "VirtualNetwork"
+  }
+
+  # Databricks: Worker to Databricks Webapp (Outbound)
+  security_rule {
+    name                       = "databricks-worker-to-databricks-webapp"
+    priority                   = 200
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_ranges    = ["443", "3306", "8443-8451"]
+    source_address_prefix      = "VirtualNetwork"
+    destination_address_prefix = "AzureDatabricks"
+  }
+
+  # Databricks: Worker to SQL (Outbound)
+  security_rule {
+    name                       = "databricks-worker-to-sql"
+    priority                   = 201
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "3306"
+    source_address_prefix      = "VirtualNetwork"
+    destination_address_prefix = "Sql"
+  }
+
+  # Databricks: Worker to Storage (Outbound)
+  security_rule {
+    name                       = "databricks-worker-to-storage"
+    priority                   = 202
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "VirtualNetwork"
+    destination_address_prefix = "Storage"
+  }
+
+  # Databricks: Worker to Event Hub (Outbound)
+  security_rule {
+    name                       = "databricks-worker-to-eventhub"
+    priority                   = 203
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "9093"
+    source_address_prefix      = "VirtualNetwork"
+    destination_address_prefix = "EventHub"
+  }
+
+  # Deny all other inbound traffic (restored with SCC)
   security_rule {
     name                       = "DenyAllInbound"
     priority                   = 4096

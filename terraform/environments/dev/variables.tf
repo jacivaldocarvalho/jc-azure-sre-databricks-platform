@@ -13,7 +13,7 @@ variable "environment" {
 variable "location" {
   description = "Azure region"
   type        = string
-  default     = "eastus"
+  default     = "brazilsouth"
 }
 
 variable "project_name" {
@@ -36,35 +36,35 @@ variable "vnet_address_space" {
 variable "subnets" {
   description = "Subnet configurations"
   type = map(object({
-    address_prefixes = list(string)
-    service_endpoints = optional(list(string))
+    address_prefixes                  = list(string)
+    service_endpoints                 = optional(list(string))
     private_endpoint_network_policies = optional(string)
     delegation                        = optional(string)
   }))
   default = {
     databricks = {
-      address_prefixes = ["10.0.1.0/24"]
+      address_prefixes  = ["10.0.1.0/24"]
       service_endpoints = ["Microsoft.Storage"]
-      delegation       = "Microsoft.Databricks/workspaces"
+      delegation        = "Microsoft.Databricks/workspaces"
     }
     databricks_private = {
-      address_prefixes = ["10.0.6.0/24"]
+      address_prefixes  = ["10.0.6.0/24"]
       service_endpoints = ["Microsoft.Storage"]
-      delegation       = "Microsoft.Databricks/workspaces"
+      delegation        = "Microsoft.Databricks/workspaces"
     }
     aks = {
-      address_prefixes = ["10.0.2.0/24"]
+      address_prefixes  = ["10.0.2.0/24"]
       service_endpoints = ["Microsoft.Storage"]
     }
     data = {
-      address_prefixes = ["10.0.3.0/24"]
+      address_prefixes  = ["10.0.3.0/24"]
       service_endpoints = ["Microsoft.Storage", "Microsoft.KeyVault"]
     }
     monitoring = {
       address_prefixes = ["10.0.4.0/24"]
     }
     private_endpoints = {
-      address_prefixes = ["10.0.5.0/24"]
+      address_prefixes                  = ["10.0.5.0/24"]
       private_endpoint_network_policies = "Enabled"
     }
   }
