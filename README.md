@@ -5,28 +5,32 @@ Azure-Native SRE & Platform Engineering with Databricks and AI Integration
 [![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5-7B42BC)](https://terraform.io)
 [![Azure](https://img.shields.io/badge/Azure-Cloud-0078D4)](https://azure.microsoft.com)
 [![Databricks](https://img.shields.io/badge/Databricks-Premium-FF3621)](https://databricks.com)
-[![Python](https://img.shields.io/badge/Python-3.9+-3776AB)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.12+-3776AB)](https://python.org)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-AKS-326CE5)](https://kubernetes.io)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Phase](https://img.shields.io/badge/Phase-2-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
+[![Phase](https://img.shields.io/badge/Phase-3-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
+
+---
 
 ## Project Status
 
-**PHASE 2 - Databricks Workspace and Data Lake Completed**
+**Phase 3 — Data Pipeline completed.**
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| **PHASE 0** | Foundation: Git, Makefile, conventions, structure | Completed |
-| **PHASE 1** | Base network: VNet, subnets, NSG, remote backend | Completed |
-| **PHASE 2** | Databricks Workspace, ADLS Gen2, VNet Injection | Completed |
-| **PHASE 3** | Data pipeline: notebooks, jobs, Delta Lake | Next |
-| **PHASE 4** | CI/CD with Azure DevOps | Planned |
-| **PHASE 5** | Observability: Prometheus, Grafana, SLOs | Planned |
-| **PHASE 6** | Security: RBAC, Managed Identities, Key Vault | Planned |
-| **PHASE 7** | AI Integration: Azure OpenAI, AI Foundry | Planned |
-| **PHASE 8** | AKS and containerized workloads | Planned |
-| **PHASE 9** | Disaster recovery and resilience | Planned |
-| **PHASE 10** | Cost optimization and governance | Planned |
+| **Phase 0** | Foundation: Git, Makefile, conventions, structure | Completed |
+| **Phase 1** | Base network: VNet, subnets, NSG, remote backend | Completed |
+| **Phase 2** | Databricks Workspace, ADLS Gen2, VNet Injection, SCC | Completed |
+| **Phase 3** | Data pipeline: ingestion, validation, transformation, Delta | Completed |
+| **Phase 4** | CI/CD with Azure DevOps | Next |
+| **Phase 5** | Observability: Prometheus, Grafana, SLOs | Planned |
+| **Phase 6** | Security: RBAC, Managed Identities, Key Vault | Planned |
+| **Phase 7** | AI Integration: Azure OpenAI, AI Foundry | Planned |
+| **Phase 8** | AKS and containerized workloads | Planned |
+| **Phase 9** | Disaster recovery and resilience | Planned |
+| **Phase 10** | Cost optimization and governance | Planned |
+
+---
 
 ## Problem
 
@@ -41,20 +45,27 @@ Running production-grade data and AI workloads on Azure requires:
 
 Most projects address these challenges in isolation. This project demonstrates an integrated approach.
 
+---
+
 ## Solution
 
-JC-Azure SRE/Databricks Platform is a hands-on project that provisions and operates a complete Azure-native data and AI platform using SRE and DevOps practices.
+JC-Azure SRE/Databricks Platform provisions and operates a complete Azure-native data and AI platform using SRE and DevOps practices.
 
 **Key capabilities:**
 
 - Infrastructure as Code with Terraform (modular, multi-environment)
-- Network segmentation with Private Endpoints and delegation
-- Databricks Workspace with VNet Injection (Premium tier)
+- Network segmentation with Private Endpoints and subnet delegation
+- Databricks Workspace with VNet Injection and Secure Cluster Connectivity (Premium tier)
 - ADLS Gen2 for data lake with structured containers
-- CI/CD pipelines with Azure DevOps
-- Observability with Prometheus and Grafana
-- Security with RBAC and Managed Identities
-- Integration with Azure OpenAI and AI Foundry
+- Local-first data pipeline with PySpark and Delta Lake
+- Ingestion from real public APIs (BCB SGS)
+- Declarative schema validation with Pandera
+- CI/CD pipelines with Azure DevOps (planned)
+- Observability with Prometheus and Grafana (planned)
+- Security with RBAC and Managed Identities (planned)
+- Integration with Azure OpenAI and AI Foundry (planned)
+
+---
 
 ## Real-World Use Case
 
@@ -73,12 +84,12 @@ A mid-sized retail company with operations in multiple regions needs to:
 
 | Business Need | Platform Capability |
 |---------------|--------------------|
-| Ingest events from multiple sources | ADLS Gen2 containers (`raw`) with Event Hubs integration (Phase 3) |
-| Process and enrich data continuously | Databricks notebooks and jobs with Delta Lake (Phase 3) |
-| Train recommendation and churn models | Databricks ML runtime and MLflow tracking (Phase 3+) |
+| Ingest events from multiple sources | ADLS Gen2 containers (`raw`) with Event Hubs integration (Phase 7+) |
+| Process and enrich data continuously | PySpark pipeline with Delta Lake (Phase 3) |
+| Train recommendation and churn models | Databricks ML runtime and MLflow (Phase 7+) |
 | Serve AI insights to business teams | Azure OpenAI and AI Foundry endpoints (Phase 7) |
 | Ensure compliance and data protection | VNet Injection, Private Endpoints, RBAC, Key Vault (Phases 1, 2, 6) |
-| Control costs during demand spikes | Databricks auto-termination, cluster policies, FinOps tagging (Phase 10) |
+| Control costs during demand spikes | Aggressive auto-termination, FinOps tagging (Phase 10) |
 | Monitor pipeline and model health | Prometheus, Grafana, SLOs, alerting (Phase 5) |
 | Automate deployment and rollback | Azure DevOps pipelines with Terraform (Phase 4) |
 
@@ -138,19 +149,9 @@ A mid-sized retail company with operations in multiple regions needs to:
                     └─────────────────────┘
 ```
 
-### Expected Outcomes
+---
 
-- Time from event to insight reduced from hours to minutes
-- Recommendation model accuracy improved with fresher data
-- Infrastructure cost predictability via tagging and cost allocation
-- Compliance posture strengthened by private networking and RBAC
-- Faster onboarding of new data sources and models
-- Operational confidence through SLOs and proactive alerting
-
-
-
-
-## Current Architecture (PHASE 2)
+## Current Architecture (Phase 3)
 
 ```
                          AZURE SUBSCRIPTION
@@ -158,7 +159,7 @@ A mid-sized retail company with operations in multiple regions needs to:
                                 ▼
                     ┌───────────────────────┐
                     │  dev-sredatabricks-rg │
-                    │       (eastus)        │
+                    │      (brazilsouth)    │
                     └───────────┬───────────┘
                                 │
         ┌───────────────────────┼───────────────────────┐
@@ -169,147 +170,125 @@ A mid-sized retail company with operations in multiple regions needs to:
 │  dev-sredat.. │    │  devsredata      │    │  Workspace       │
 │  -vnet        │    │  (ADLS Gen2)     │    │  dev-sredat..    │
 │  10.0.0.0/16  │    │                  │    │  -dbw (Premium)  │
-└───────┬───────┘    │  Containers:     │    │  VNet Injection  │
-        │            │    - raw         │    └────────┬─────────┘
-        │            │    - processed   │             │
-        │            │    - notebooks   │             │
-        │            │    - checkpoints │             │
-        │            └──────────────────┘             │
-        │                                             │
-        │                                             │
-        ▼                                             ▼
+└───────┬───────┘    │  Containers:     │    │  VNet + SCC      │
+        │            │    - raw         │    └──────────────────┘
+        │            │    - processed   │
+        │            │    - notebooks   │
+        │            │    - checkpoints │
+        │            └──────────────────┘
+        │
+        ▼
 ┌────────────────────────────────────────────────────────────┐
 │                      SUBNETS                               │
-│                                                            │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
-│  │  databricks  │  │  databricks  │  │     aks      │    │
-│  │  10.0.1.0/24 │  │  _private    │  │ 10.0.2.0/24  │    │
-│  │  (delegated) │  │  10.0.6.0/24 │  │              │    │
-│  │              │  │  (delegated) │  │              │    │
-│  └──────────────┘  └──────────────┘  └──────────────┘    │
-│                                                            │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
-│  │     data     │  │  monitoring  │  │   private    │    │
-│  │  10.0.3.0/24 │  │  10.0.4.0/24 │  │  _endpoints  │    │
-│  │              │  │              │  │  10.0.5.0/24 │    │
-│  └──────────────┘  └──────────────┘  └──────────────┘    │
-│                                                            │
+│  databricks │ databricks_private │ aks │ data │ monitoring │
+│  private_endpoints                                         │
 └────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
                     ┌───────────────────────┐
                     │  NSG                  │
                     │  dev-sredatabricks    │
-                    │  -nsg                 │
-                    │  (restrictive default)│
+                    │  -nsg (7 rules)       │
                     └───────────────────────┘
 ```
 
-## Planned Architecture (Complete)
+### Data Pipeline Architecture (Phase 3)
 
 ```
-                         INTERNET
-                            │
-                            ▼
-                    ┌─────────────────┐
-                    │  Azure Front   │
-                    │  Door / App GW │
-                    └────────┬───────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │  AKS Cluster   │
-                    │                │
-                    │  Ingress       │
-                    │  Services      │
-                    │  Workloads     │
-                    └────────┬───────┘
-                             │
-        ┌────────────────────┼────────────────────┐
-        │                    │                    │
-        ▼                    ▼                    ▼
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│  Databricks  │    │  ADLS Gen2   │    │  Azure       │
-│  Workspace   │    │  Data Lake   │    │  OpenAI      │
-│              │    │              │    │  + AI Foundry│
-│  Notebooks   │    │  Delta Lake  │    │              │
-│  Jobs        │    │  Unity Catalog│   │  Models      │
-│  Clusters    │    │              │    │  Endpoints   │
-└──────┬───────┘    └──────┬───────┘    └──────┬───────┘
-       │                   │                   │
-       └───────────────────┼───────────────────┘
-                           │
-                           ▼
-                ┌──────────────────────┐
-                │   OBSERVABILITY      │
-                │                      │
-                │  Prometheus │ Grafana │
-                │  Loki       │ OTel    │
-                │                      │
-                │  SLIs / SLOs         │
-                │  Alerting            │
-                └──────────────────────┘
-
-
-        ┌───────────────────────────────────────┐
-        │              PLATFORM                 │
-        │                                       │
-        │  Azure DevOps  │ Terraform            │
-        │  Key Vault     │ Managed Identities   │
-        │  Policy        │ Cost Management      │
-        └───────────────────────────────────────┘
+   ┌──────────────────────┐
+   │  BCB SGS API         │
+   │  (Selic, CDI, IPCA)  │
+   └──────────┬───────────┘
+              │ HTTP
+              ▼
+   ┌──────────────────────┐
+   │  src/api/bcb_sgs.py  │
+   │  Client with chunking│
+   └──────────┬───────────┘
+              │
+              ▼
+   ┌──────────────────────┐
+   │  src/pipeline/       │
+   │  ingest.py           │
+   │  validate.py         │
+   │  transform.py        │
+   │  persist.py          │
+   └──────────┬───────────┘
+              │
+              ▼
+   ┌──────────────────────┐
+   │  Delta Lake          │
+   │  spark-warehouse/    │
+   │    raw/              │
+   │    processed/        │
+   └──────────────────────┘
 ```
+
+---
 
 ## Implemented Features
 
-### PHASE 0 - Foundation
+### Phase 0 — Foundation
 
-- [x] Git repository with branching strategy (main/develop/feature/hotfix)
+- [x] Git repository with branching strategy
 - [x] Makefile with task automation
-- [x] .gitignore with patterns for Terraform, Python, Databricks, secrets
-- [x] .env.example for environment variables
-- [x] Project conventions documented (naming, tagging, structure)
+- [x] `.gitignore` for Terraform, Python, Databricks, secrets
+- [x] `.env.example` for environment variables
+- [x] Project conventions documented
 - [x] Directory structure for all phases
 
-### PHASE 1 - Base Network
+### Phase 1 — Base Network
 
 - [x] Terraform remote backend on Azure Storage
-- [x] Modular Terraform structure (networking module)
+- [x] Modular Terraform structure (`networking` module)
 - [x] Resource Group with standardized naming
 - [x] VNet with address space 10.0.0.0/16
-- [x] Subnets for all planned workloads
-- [x] Network Security Group with restrictive default rules
+- [x] Six subnets for planned workloads
+- [x] NSG with documented rule set
 - [x] NSG associations with all subnets
 - [x] Service endpoints for Storage and Key Vault
-- [x] Multi-environment structure (dev, staging, prod)
+- [x] Multi-environment structure (`dev`, `staging`, `prod`)
 
-### PHASE 2 - Databricks and Data Lake
+### Phase 2 — Databricks and Data Lake
 
 - [x] Databricks Workspace (Premium tier)
 - [x] VNet Injection with dedicated public and private subnets
-- [x] Subnet delegation for Microsoft.Databricks/workspaces
-- [x] Azure Data Lake Storage Gen2 (devsredata)
-- [x] Four containers: raw, processed, notebooks, checkpoints
+- [x] Secure Cluster Connectivity (`no_public_ip = true`)
+- [x] `NoAzureDatabricksRules` and pre-defined NSG rules
+- [x] Subnet delegation for `Microsoft.Databricks/workspaces`
+- [x] Azure Data Lake Storage Gen2 (`devsredata`)
+- [x] Four containers: `raw`, `processed`, `notebooks`, `checkpoints`
 - [x] Hierarchical Namespace enabled
-- [x] TLS 1.2 minimum
-- [x] Blob public access disabled
-- [x] Managed resource group for Databricks
-- [x] Separate storage account for DBFS (devsredatadbw)
+- [x] TLS 1.2 minimum and blob public access disabled
+- [x] Separate DBFS storage account (`devsredatadbw`)
+
+### Phase 3 — Data Pipeline
+
+- [x] API client for BCB SGS with automatic chunking
+- [x] Ingestion of three economic series (Selic, CDI, IPCA)
+- [x] Declarative validation with Pandera
+- [x] Annualization, time dimensions, variation computation
+- [x] Monthly aggregation per series
+- [x] Delta Lake persistence (raw and processed layers)
+- [x] Local-first execution with PySpark
+- [x] Test suite with 10 unit and smoke tests
+- [x] Automated local environment setup
+
+---
 
 ## Planned Features
 
-- [ ] Data pipeline with notebooks and Delta Lake
-- [ ] Scheduled Databricks jobs with monitoring
-- [ ] Unity Catalog and metastore configuration
-- [ ] Azure DevOps CI/CD pipelines
-- [ ] Prometheus and Grafana observability stack
-- [ ] SLIs and SLOs for critical services
-- [ ] RBAC and Managed Identities
-- [ ] Key Vault integration for secrets
-- [ ] Azure OpenAI and AI Foundry integration
-- [ ] AKS cluster and containerized workloads
-- [ ] Disaster recovery strategy and runbooks
-- [ ] Cost management and FinOps practices
+- [ ] CI/CD with Azure DevOps (Phase 4)
+- [ ] Prometheus and Grafana observability stack (Phase 5)
+- [ ] SLIs and SLOs for critical services (Phase 5)
+- [ ] RBAC and Managed Identities (Phase 6)
+- [ ] Key Vault integration for secrets (Phase 6)
+- [ ] Azure OpenAI and AI Foundry integration (Phase 7)
+- [ ] AKS cluster and containerized workloads (Phase 8)
+- [ ] Disaster recovery strategy and runbooks (Phase 9)
+- [ ] Cost management and FinOps practices (Phase 10)
+
+---
 
 ## Prerequisites
 
@@ -318,7 +297,8 @@ Before getting started, install:
 - Git
 - Terraform >= 1.5.0
 - Azure CLI
-- Python >= 3.9
+- Python 3.12+ (for local pipeline)
+- Java 17 (for PySpark)
 - Databricks CLI
 - kubectl
 - Make
@@ -326,8 +306,12 @@ Before getting started, install:
 You also need:
 
 - An Azure subscription with sufficient permissions
-- The Microsoft.Databricks provider registered
-- A storage account for Terraform remote backend
+- The `Microsoft.Databricks` provider registered
+- A storage account for the Terraform remote backend
+
+**Known limitation:** Azure for Students subscriptions cannot provision Databricks clusters due to quota and SKU restrictions. See [ADR-001](docs/architecture/adr-001-databricks-cluster-limitation.md).
+
+---
 
 ## Quick Start
 
@@ -345,8 +329,6 @@ cp .env.example .env
 # Edit .env with your Azure credentials
 ```
 
-> Important: Never commit the `.env` file.
-
 ### 3. Configure Terraform Variables
 
 ```bash
@@ -362,30 +344,69 @@ az login
 az account set --subscription <subscription-id>
 ```
 
-### 5. Initialize and Deploy
+### 5. Provision the Infrastructure
 
 ```bash
-make init
 make terraform-init
 make terraform-plan
 make terraform-apply
 ```
 
+### 6. Set Up the Local Pipeline
+
+```bash
+make pipeline-setup
+```
+
+### 7. Run the Pipeline
+
+```bash
+make pipeline-run
+```
+
+### 8. Inspect the Results
+
+```bash
+make pipeline-query
+```
+
+---
+
 ## Make Commands
+
+### Project
 
 | Command | Description |
 |---------|-------------|
-| `make help` | Lists available commands |
-| `make init` | Initializes the local project configuration |
-| `make validate` | Validates Terraform configuration |
-| `make format` | Formats Terraform and Python files |
-| `make clean` | Removes temporary files |
-| `make terraform-init` | Initializes Terraform (dev) |
-| `make terraform-plan` | Generates execution plan (dev) |
-| `make terraform-apply` | Applies infrastructure changes (dev) |
-| `make terraform-destroy` | Destroys all managed resources (dev) |
+| `make help` | List all available commands |
+| `make init` | Initialize project (create `.env` from example) |
+| `make validate` | Validate Terraform configuration |
+| `make format` | Format Terraform and Python files |
+| `make lint` | Run Ruff linter on Python code |
+| `make clean` | Clean temporary files and caches |
 
-> Warning: `terraform-apply` and `terraform-destroy` modify or remove Azure resources. Always review the plan before applying.
+### Terraform (dev environment)
+
+| Command | Description |
+|---------|-------------|
+| `make terraform-init` | Initialize Terraform |
+| `make terraform-plan` | Plan infrastructure changes |
+| `make terraform-apply` | Apply infrastructure changes |
+| `make terraform-destroy` | Destroy all managed resources |
+
+### Data Pipeline
+
+| Command | Description |
+|---------|-------------|
+| `make pipeline-setup` | Create virtualenv and install dependencies |
+| `make pipeline-test` | Run pipeline unit tests |
+| `make pipeline-run` | Execute the pipeline with default date range |
+| `make pipeline-query` | Query the monthly aggregates Delta table |
+| `make pipeline-clean` | Remove local Delta tables and caches |
+
+> **Warning:** `terraform-apply` and `terraform-destroy` modify or remove Azure resources. Always review the plan before applying.
+
+---
 
 ## Project Structure
 
@@ -394,6 +415,7 @@ jc-azure-sre-databricks-platform/
 ├── README.md
 ├── LICENSE
 ├── Makefile
+├── CONTRIBUTING.md
 ├── .gitignore
 ├── .env.example
 │
@@ -407,46 +429,48 @@ jc-azure-sre-databricks-platform/
 │       ├── staging/
 │       └── prod/
 │
+├── python/
+│   ├── requirements.txt
+│   ├── pytest.ini
+│   ├── src/
+│   │   ├── api/              # BCB SGS client
+│   │   ├── pipeline/         # ingest, validate, transform, persist
+│   │   └── utils/            # logging, spark helpers
+│   └── tests/                # 10 unit and smoke tests
+│
+├── databricks/
+│   ├── notebooks/
+│   ├── jobs/
+│   └── libraries/
+│
 ├── azure-devops/
 │   ├── pipelines/
 │   └── templates/
 │
-├── databricks/
-│   ├── notebooks/
-│   │   ├── ingestion/
-│   │   ├── processing/
-│   │   ├── ml/
-│   │   └── ai/
-│   ├── jobs/
-│   └── libraries/
-│
 ├── monitoring/
-│   ├── grafana/
-│   ├── prometheus/
-│   └── scripts/
-│
 ├── security/
-│   ├── access-control/
-│   └── scripts/
-│
 ├── kubernetes/
-│   ├── manifests/
-│   └── helm/
-│
-├── python/
-│   └── src/
-│
 ├── scripts/
-│   ├── bootstrap.sh
-│   ├── health-check.sh
-│   └── rollback.sh
+│   └── setup-local.sh
 │
 └── docs/
+    ├── README.md
+    ├── conventions.md
+    ├── phases/
+    │   ├── phase-0-foundation.md
+    │   ├── phase-1-network.md
+    │   ├── phase-2-databricks-data-lake.md
+    │   └── phase-3-pipeline.md
     ├── architecture/
+    │   ├── README.md
+    │   └── adr-001-databricks-cluster-limitation.md
     ├── operations/
-    ├── troubleshooting/
-    └── conventions.md
+    │   └── README.md
+    └── troubleshooting/
+        └── README.md
 ```
+
+---
 
 ## Infrastructure Overview
 
@@ -464,34 +488,40 @@ jc-azure-sre-databricks-platform/
 
 All resources are tagged with:
 
-- `Environment`: dev, staging, prod
-- `Project`: SRE-Databricks
-- `ManagedBy`: Terraform
+- `Environment`: `dev`, `staging`, `prod`
+- `Project`: `SRE-Databricks`
+- `ManagedBy`: `Terraform`
 
 ### Subnet Allocation
 
 | Subnet | CIDR | Purpose |
 |--------|------|---------|
 | databricks | 10.0.1.0/24 | Databricks public subnet (delegated) |
-| aks | 10.0.2.0/24 | AKS cluster nodes |
+| aks | 10.0.2.0/24 | AKS cluster nodes (future) |
 | data | 10.0.3.0/24 | Data services |
-| monitoring | 10.0.4.0/24 | Prometheus and Grafana |
+| monitoring | 10.0.4.0/24 | Prometheus and Grafana (future) |
 | private_endpoints | 10.0.5.0/24 | Private endpoints for PaaS |
 | databricks_private | 10.0.6.0/24 | Databricks private subnet (delegated) |
 
-## Environments
+---
 
-The infrastructure is organized into separate environments:
+## Documentation
 
-```text
-terraform/
-└── environments/
-    ├── dev/          # Development environment
-    ├── staging/      # Staging environment (future)
-    └── prod/         # Production environment (future)
-```
+Detailed documentation is available under `docs/`:
 
-Each environment has its own Terraform configuration, state file, and variables. Currently only `dev` is implemented.
+| Document | Description |
+|----------|-------------|
+| [Documentation Index](docs/README.md) | Entry point for all documentation |
+| [Conventions](docs/conventions.md) | Project standards and conventions |
+| [Phase 0 — Foundation](docs/phases/phase-0-foundation.md) | Project setup |
+| [Phase 1 — Base Network](docs/phases/phase-1-network.md) | Network provisioning |
+| [Phase 2 — Databricks and Data Lake](docs/phases/phase-2-databricks-data-lake.md) | Platform provisioning |
+| [Phase 3 — Data Pipeline](docs/phases/phase-3-pipeline.md) | Pipeline implementation |
+| [ADR-001](docs/architecture/adr-001-databricks-cluster-limitation.md) | Databricks cluster limitation |
+| [Operations](docs/operations/README.md) | Runbooks and procedures |
+| [Troubleshooting](docs/troubleshooting/README.md) | Known issues and fixes |
+
+---
 
 ## Security
 
@@ -499,49 +529,47 @@ The following practices are maintained throughout development:
 
 - Never commit the `.env` file
 - Never store secrets directly in Terraform files
-- Use Azure Key Vault for secrets management (planned for Phase 6)
-- Use Managed Identities for resource access (planned for Phase 6)
-- Follow the principle of least privilege
-- NSG with restrictive default (deny all inbound, except Azure Load Balancer)
+- Azure Key Vault for secrets management (planned for Phase 6)
+- Managed Identities for resource access (planned for Phase 6)
+- Principle of least privilege for Azure permissions
+- NSG with restrictive default and documented exceptions
 - TLS 1.2 minimum for storage accounts
 - Blob public access disabled
 - Hierarchical Namespace for ADLS Gen2
+- Secure Cluster Connectivity for Databricks
+- `NoAzureDatabricksRules` with pre-defined NSG rules
+
+---
 
 ## Cost Management
 
-To control costs during development:
+The project runs on a constrained budget. Controls in place:
 
-- Databricks clusters configured with auto-termination
-- Only necessary clusters active at any time
-- All resources can be destroyed with `terraform destroy`
-- Azure Cost Management for monitoring (planned)
+- Databricks clusters with aggressive auto-termination (when provisionable)
+- Only necessary resources kept active
+- All resources can be destroyed with `make terraform-destroy`
+- Data pipeline runs locally, avoiding compute costs in the cloud
+- Azure Cost Management for monitoring (planned for Phase 10)
 
-## Documentation
-
-Additional documentation is organized under `docs/`:
-
-| Document | Description |
-|----------|-------------|
-| [Conventions](docs/conventions.md) | Project conventions and standards |
-| [Architecture (Planned)](docs/architecture/) | Architecture decisions (ADRs) |
-| [Operations (Planned)](docs/operations/) | Runbooks and procedures |
-| [Troubleshooting (Planned)](docs/troubleshooting/) | Troubleshooting guides |
+---
 
 ## Roadmap
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| **PHASE 0** | Foundation: Git, Makefile, conventions | Completed |
-| **PHASE 1** | Base network: VNet, subnets, NSG | Completed |
-| **PHASE 2** | Databricks Workspace and Data Lake | Completed |
-| **PHASE 3** | Data pipeline with notebooks and Delta Lake | Next |
-| **PHASE 4** | CI/CD with Azure DevOps | Planned |
-| **PHASE 5** | Observability: Prometheus, Grafana, SLOs | Planned |
-| **PHASE 6** | Security: RBAC, Managed Identities, Key Vault | Planned |
-| **PHASE 7** | AI Integration: Azure OpenAI, AI Foundry | Planned |
-| **PHASE 8** | AKS and containerized workloads | Planned |
-| **PHASE 9** | Disaster recovery and resilience | Planned |
-| **PHASE 10** | Cost optimization and governance | Planned |
+| **Phase 0** | Foundation: Git, Makefile, conventions | Completed |
+| **Phase 1** | Base network: VNet, subnets, NSG | Completed |
+| **Phase 2** | Databricks Workspace and Data Lake | Completed |
+| **Phase 3** | Data pipeline with ingestion, validation, Delta | Completed |
+| **Phase 4** | CI/CD with Azure DevOps | Next |
+| **Phase 5** | Observability: Prometheus, Grafana, SLOs | Planned |
+| **Phase 6** | Security: RBAC, Managed Identities, Key Vault | Planned |
+| **Phase 7** | AI Integration: Azure OpenAI, AI Foundry | Planned |
+| **Phase 8** | AKS and containerized workloads | Planned |
+| **Phase 9** | Disaster recovery and resilience | Planned |
+| **Phase 10** | Cost optimization and governance | Planned |
+
+---
 
 ## Contributing
 
@@ -551,20 +579,29 @@ Additional documentation is organized under `docs/`:
 4. Push to the branch (`git push origin feature/new-feature`).
 5. Open a Pull Request.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+
+---
+
 ## License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+
+---
 
 ## Author
 
 **Jacivaldo Carvalho**
 Telecommunications Engineer | DevOps | SRE | Networking
 
+---
+
 ## Acknowledgments
 
 - Microsoft Azure
 - Terraform
 - Databricks
-- Azure DevOps
-- Kubernetes
+- Banco Central do Brasil (public data)
+- PySpark and Delta Lake communities
 - Prometheus and Grafana
+- Kubernetes
