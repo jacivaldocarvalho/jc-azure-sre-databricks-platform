@@ -1,0 +1,24 @@
+# Common variables shared across pipelines.
+# Values that change between environments or organizations
+# should be overridden at the pipeline level or via variable groups.
+
+variables:
+  # Tool versions (pinned for reproducibility)
+  TERRAFORM_VERSION: '1.9.8'
+  PYTHON_VERSION: '3.12'
+  RUFF_VERSION: '0.7.1'
+
+  # Working directories
+  TERRAFORM_DIR: '$(Build.SourcesDirectory)/terraform/environments/dev'
+  PYTHON_DIR: '$(Build.SourcesDirectory)/python'
+
+  # Azure configuration (mirrors the variable group in Azure DevOps)
+  # These defaults are used when the variable group is not attached.
+  AZURE_SERVICE_CONNECTION: 'azure-jc-carvalho'
+  AZURE_LOCATION: 'brazilsouth'
+
+  # Terraform backend (state)
+  TF_STATE_RG: 'tfstate-rg'
+  TF_STATE_SA: 'tfstatejcsredatabricks'
+  TF_STATE_CONTAINER: 'tfstate'
+  TF_STATE_KEY: 'dev.terraform.tfstate'

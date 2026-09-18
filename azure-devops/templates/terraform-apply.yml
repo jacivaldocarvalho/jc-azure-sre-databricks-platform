@@ -1,0 +1,52 @@
+# Applies a previously generated Terraform plan.
+# Requires manual approval via an Azure DevOps Environment.
+
+parameters:
+  - name: azureServiceConnection
+    type: string
+    default: '$(AZURE_SERVICE_CONNECTION)'
+  - name: workingDirectory
+    type: string
+    default: '$(TERRAFORM_DIR)'
+  - name: environment
+    type: string
+    default: 'dev'
+  - name: planArtifactName
+    type: string
+    default: 'terraform-plan'
+
+steps:
+  - download: current
+    artifact: '${{ parameters.planArtifactName }}'
+    displayName: 'Download Terraform plan artifact'
+
+  - task: TerraformInstaller@1
+    displayName: 'Install Terraform'
+    inputs:
+      terraformVersion: '$(TERRAFORM_VERSION)'
+
+  - task: AzureCLI@2
+    displayName: 'Terraform init and apply'
+    inputs:
+      azureSubscription: ${{ parameters.azureServiceConnection }}
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      workingDirectory: ${{ parameters.workingDirectory }}
+      inlineScript: |
+        set -euo pipefail
+
+        echo "==> Initializing backend..."
+        terraform init -input=false \
+          -backend-config="resource_group_name=$(TF_STATE_RG)" \
+          -backend-config="storage_account_name=$(TF_STATE_SA)" \
+          -backend-config="container_name=$(TF_STATE_CONTAINER)" \
+          -backend-config="key=$(TF_STATE_KEY)"
+
+        echo "==> Restoring plan from artifact..."
+        cp "$(Pipeline.Workspace)/${{ parameters.planArtifactName }}/tfplan" ./tfplan
+
+        echo "==> Applying plan..."
+        terraform apply -input=false -auto-approve tfplan
+
+        echo "==> Outputs:"
+        terraform output

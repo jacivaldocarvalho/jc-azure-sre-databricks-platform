@@ -1,0 +1,57 @@
+# Python pipeline for the data pipeline.
+#
+# Stages:
+#   Lint  - ruff check and format verification
+#   Test  - pytest with coverage, publishes results
+#
+# Prerequisites:
+#   - Variable group: jc-azure-sre-common
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - python/**
+      - azure-devops/**
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - python/**
+
+variables:
+  - group: jc-azure-sre-common
+  - template: ../templates/variables.yml
+
+stages:
+
+  - stage: Lint
+    displayName: 'Python Lint'
+    jobs:
+      - job: Lint
+        displayName: 'Lint'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+          - template: ../templates/python-lint.yml
+
+  - stage: Test
+    displayName: 'Python Test'
+    dependsOn: Lint
+    condition: succeeded()
+    jobs:
+      - job: Test
+        displayName: 'Test with coverage'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+          - template: ../templates/python-test.yml

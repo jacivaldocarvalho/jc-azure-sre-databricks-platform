@@ -1,0 +1,63 @@
+# Generates a Terraform plan and publishes it as an artifact.
+# The plan file is used by the apply stage to ensure exactly
+# the reviewed changes are applied.
+
+parameters:
+  - name: azureServiceConnection
+    type: string
+    default: '$(AZURE_SERVICE_CONNECTION)'
+  - name: workingDirectory
+    type: string
+    default: '$(TERRAFORM_DIR)'
+  - name: environment
+    type: string
+    default: 'dev'
+  - name: planArtifactName
+    type: string
+    default: 'terraform-plan'
+
+steps:
+  - task: TerraformInstaller@1
+    displayName: 'Install Terraform'
+    inputs:
+      terraformVersion: '$(TERRAFORM_VERSION)'
+
+  - task: AzureCLI@2
+    displayName: 'Terraform init, plan, and publish'
+    inputs:
+      azureSubscription: ${{ parameters.azureServiceConnection }}
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      workingDirectory: ${{ parameters.workingDirectory }}
+      inlineScript: |
+        set -euo pipefail
+
+        echo "==> Initializing backend..."
+        terraform init -input=false \
+          -backend-config="resource_group_name=$(TF_STATE_RG)" \
+          -backend-config="storage_account_name=$(TF_STATE_SA)" \
+          -backend-config="container_name=$(TF_STATE_CONTAINER)" \
+          -backend-config="key=$(TF_STATE_KEY)"
+
+        echo "==> Creating plan..."
+        terraform plan -input=false -out=tfplan
+
+        echo "==> Converting plan to text for review..."
+        terraform show -no-color tfplan > tfplan.txt
+
+        echo "==> Plan preview:"
+        head -n 50 tfplan.txt
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish plan artifact'
+    inputs:
+      targetPath: '${{ parameters.workingDirectory }}/tfplan'
+      artifact: '${{ parameters.planArtifactName }}'
+      publishLocation: 'pipeline'
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish plan text for review'
+    inputs:
+      targetPath: '${{ parameters.workingDirectory }}/tfplan.txt'
+      artifact: '${{ parameters.planArtifactName }}-text'
+      publishLocation: 'pipeline'

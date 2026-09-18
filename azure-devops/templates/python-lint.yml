@@ -1,0 +1,28 @@
+# Runs Ruff for linting and format checking.
+
+parameters:
+  - name: pythonVersion
+    type: string
+    default: '$(PYTHON_VERSION)'
+  - name: workingDirectory
+    type: string
+    default: '$(PYTHON_DIR)'
+
+steps:
+  - task: UsePythonVersion@0
+    displayName: 'Use Python ${{ parameters.pythonVersion }}'
+    inputs:
+      versionSpec: ${{ parameters.pythonVersion }}
+
+  - script: |
+      python -m pip install --upgrade pip
+      pip install ruff==$(RUFF_VERSION)
+    displayName: 'Install Ruff'
+
+  - script: ruff check src/ tests/
+    displayName: 'Ruff check'
+    workingDirectory: ${{ parameters.workingDirectory }}
+
+  - script: ruff format --check src/ tests/
+    displayName: 'Ruff format check'
+    workingDirectory: ${{ parameters.workingDirectory }}
