@@ -20,6 +20,7 @@ Central documentation for the JC-Azure SRE Databricks Platform project.
 - [Phase 1 — Base Network](phases/phase-1-network.md)
 - [Phase 2 — Databricks and Data Lake](phases/phase-2-databricks-data-lake.md)
 - [Phase 3 — Data Pipeline](phases/phase-3-pipeline.md)
+- [Phase 4 — CI/CD with Azure DevOps](phases/phase-4-cicd.md)
 
 ### Architecture Decision Records
 
@@ -34,7 +35,7 @@ Central documentation for the JC-Azure SRE Databricks Platform project.
 Each phase document follows a consistent structure:
 
 1. **Objective** — what the phase set out to accomplish
-2. **Context** — preconditions and dependencies
+2. **Context** — preconditions, dependencies, and decisions
 3. **Implementation** — what was built and how
 4. **Validation** — how to verify success
 5. **Lessons Learned** — what changed and why

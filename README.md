@@ -14,7 +14,7 @@ Azure-Native SRE & Platform Engineering with Databricks and AI Integration
 
 ## Project Status
 
-**Phase 3 — Data Pipeline completed.**
+**Phase 4 — CI/CD with Azure DevOps completed.**
 
 | Phase | Description | Status |
 |-------|-------------|--------|
@@ -22,8 +22,8 @@ Azure-Native SRE & Platform Engineering with Databricks and AI Integration
 | **Phase 1** | Base network: VNet, subnets, NSG, remote backend | Completed |
 | **Phase 2** | Databricks Workspace, ADLS Gen2, VNet Injection, SCC | Completed |
 | **Phase 3** | Data pipeline: ingestion, validation, transformation, Delta | Completed |
-| **Phase 4** | CI/CD with Azure DevOps | Next |
-| **Phase 5** | Observability: Prometheus, Grafana, SLOs | Planned |
+| **Phase 4** | CI/CD with Azure DevOps (YAML ready, execution pending billing) | Completed |
+| **Phase 5** | Observability: Prometheus, Grafana, SLOs | Next |
 | **Phase 6** | Security: RBAC, Managed Identities, Key Vault | Planned |
 | **Phase 7** | AI Integration: Azure OpenAI, AI Foundry | Planned |
 | **Phase 8** | AKS and containerized workloads | Planned |
@@ -276,6 +276,31 @@ A mid-sized retail company with operations in multiple regions needs to:
 
 ---
 
+## CI/CD
+
+The project includes Azure DevOps pipeline definitions that automate validation, testing, and deployment:
+
+- **Terraform pipeline** — validates formatting, runs `terraform plan`, publishes the plan as an artifact, and applies under manual approval via an Environment
+- **Python pipeline** — runs Ruff for linting, executes the test suite with coverage, and publishes test results and coverage reports
+
+Both pipelines use reusable templates (under `azure-devops/templates/`) and path filters to avoid unnecessary runs.
+
+### Authentication
+
+Authentication uses **Workload Identity Federation (OIDC)**. No secrets are stored in Azure DevOps. Tokens are issued per pipeline run and validated by Azure AD against a Federated Credential.
+
+### Execution limitation
+
+The pipelines are implemented, versioned, and ready to run, but could not be executed on Microsoft-hosted agents. Azure DevOps does not grant the free hosted parallel job to new organizations without billing, and the **Azure for Students** subscription is not eligible for Azure DevOps billing.
+
+A self-hosted agent was considered and rejected: it would make the repository dependent on a specific personal machine, which is not appropriate for a public portfolio.
+
+The same validation performed by the pipelines is available locally through `make` targets (`make validate`, `make lint`, `make pipeline-test`). The pipelines can be activated on any Azure DevOps organization with a Pay-As-You-Go subscription by simply registering them in the UI.
+
+See [Phase 4 — CI/CD](docs/phases/phase-4-cicd.md) for details.
+
+---
+
 ## Planned Features
 
 - [ ] CI/CD with Azure DevOps (Phase 4)
@@ -517,6 +542,7 @@ Detailed documentation is available under `docs/`:
 | [Phase 1 — Base Network](docs/phases/phase-1-network.md) | Network provisioning |
 | [Phase 2 — Databricks and Data Lake](docs/phases/phase-2-databricks-data-lake.md) | Platform provisioning |
 | [Phase 3 — Data Pipeline](docs/phases/phase-3-pipeline.md) | Pipeline implementation |
+| [Phase 4 — CI/CD](docs/phases/phase-4-cicd.md) | Azure DevOps pipelines and templates |
 | [ADR-001](docs/architecture/adr-001-databricks-cluster-limitation.md) | Databricks cluster limitation |
 | [Operations](docs/operations/README.md) | Runbooks and procedures |
 | [Troubleshooting](docs/troubleshooting/README.md) | Known issues and fixes |
@@ -561,8 +587,8 @@ The project runs on a constrained budget. Controls in place:
 | **Phase 1** | Base network: VNet, subnets, NSG | Completed |
 | **Phase 2** | Databricks Workspace and Data Lake | Completed |
 | **Phase 3** | Data pipeline with ingestion, validation, Delta | Completed |
-| **Phase 4** | CI/CD with Azure DevOps | Next |
-| **Phase 5** | Observability: Prometheus, Grafana, SLOs | Planned |
+| **Phase 4** | CI/CD with Azure DevOps | Completed |
+| **Phase 5** | Observability: Prometheus, Grafana, SLOs | Next |
 | **Phase 6** | Security: RBAC, Managed Identities, Key Vault | Planned |
 | **Phase 7** | AI Integration: Azure OpenAI, AI Foundry | Planned |
 | **Phase 8** | AKS and containerized workloads | Planned |
