@@ -23,7 +23,7 @@ provider "azurerm" {
 
 # Provider Databricks - nível de workspace
 provider "databricks" {
-  alias      = "workspace"
-  host       = module.databricks.workspace_url
+  alias                       = "workspace"
+  host                        = module.databricks.workspace_url
   azure_workspace_resource_id = module.databricks.workspace_id
 }
