@@ -8,7 +8,7 @@ Azure-Native SRE & Platform Engineering with Databricks and AI Integration
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB)](https://python.org)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-AKS-326CE5)](https://kubernetes.io)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Phase](https://img.shields.io/badge/Phase-3-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
+[![Phase](https://img.shields.io/badge/Phase-5-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
 
 ---
 
