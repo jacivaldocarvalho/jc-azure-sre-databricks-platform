@@ -14,7 +14,7 @@ Azure-Native SRE & Platform Engineering with Databricks and AI Integration
 
 ## Project Status
 
-**Phase 4 — CI/CD with Azure DevOps completed.**
+**Phase 5 — Observability completed.**
 
 | Phase | Description | Status |
 |-------|-------------|--------|
@@ -23,8 +23,8 @@ Azure-Native SRE & Platform Engineering with Databricks and AI Integration
 | **Phase 2** | Databricks Workspace, ADLS Gen2, VNet Injection, SCC | Completed |
 | **Phase 3** | Data pipeline: ingestion, validation, transformation, Delta | Completed |
 | **Phase 4** | CI/CD with Azure DevOps (YAML ready, execution pending billing) | Completed |
-| **Phase 5** | Observability: Prometheus, Grafana, SLOs | Next |
-| **Phase 6** | Security: RBAC, Managed Identities, Key Vault | Planned |
+| **Phase 5** | Observability: SLIs/SLOs, Application Insights, alerts | Completed |
+| **Phase 6** | Security: RBAC, Managed Identities, Key Vault | Next |
 | **Phase 7** | AI Integration: Azure OpenAI, AI Foundry | Planned |
 | **Phase 8** | AKS and containerized workloads | Planned |
 | **Phase 9** | Disaster recovery and resilience | Planned |
@@ -301,6 +301,48 @@ See [Phase 4 — CI/CD](docs/phases/phase-4-cicd.md) for details.
 
 ---
 
+## Observability
+
+The pipeline emits metrics on every execution to **Application Insights**, and the SLIs/SLOs are defined in `monitoring/slos.md` before any tool was chosen.
+
+### Defined SLOs
+
+| SLI | SLO | Window |
+|-----|-----|--------|
+| Pipeline availability | 99% | 30 days |
+| Execution latency (P95) | < 120s | 7 days |
+| Validation error rate | < 1% | 30 days |
+| Data freshness | < 24h | Continuous |
+| Processed volume | > 1000 records | Per run |
+
+### Metrics
+
+Seven instruments are emitted via OpenTelemetry:
+
+- `pipeline_runs_total` (Counter, by status)
+- `pipeline_rows_processed_total` (Counter, by series and stage)
+- `pipeline_rows_rejected_total` (Counter, by reason)
+- `pipeline_api_requests_total` (Counter, by series and status)
+- `pipeline_duration_seconds` (Histogram, by stage)
+- `pipeline_api_request_duration_seconds` (Histogram, by series)
+- `pipeline_last_success_timestamp` (UpDownCounter)
+
+### Visualization and alerting
+
+- A Workbook `Pipeline Overview` in Application Insights renders five panels covering all SLIs
+- Four alert rules are configured, aligned with the SLOs: `pipeline-failure`, `pipeline-data-stale`, `pipeline-low-volume`, `pipeline-slow`
+- Alerts notify the `sre-oncall` action group via email
+
+### Architectural decision
+
+The original plan was to use Azure Monitor managed Prometheus with Grafana. During implementation, it became clear that the official Microsoft SDK (`azure-monitor-opentelemetry-exporter`) sends metrics to Application Insights, not to the managed Prometheus endpoint. The pipeline uses **Application Insights** as the metrics backend. This is documented in [ADR-002](docs/architecture/adr-002-observability-stack.md).
+
+The Workbook and alert rules were created manually in the portal for iteration speed and are documented in the [Post-apply checklist](docs/operations/README.md). Migration to Terraform is planned for a later phase.
+
+See [Phase 5 — Observability](docs/phases/phase-5-observability.md) for details.
+
+---
+
 ## Planned Features
 
 - [ ] CI/CD with Azure DevOps (Phase 4)
@@ -473,6 +515,7 @@ jc-azure-sre-databricks-platform/
 │   └── templates/
 │
 ├── monitoring/
+│   └── slos.md              # SLIs, SLOs, error budget policy
 ├── security/
 ├── kubernetes/
 ├── scripts/
@@ -543,7 +586,9 @@ Detailed documentation is available under `docs/`:
 | [Phase 2 — Databricks and Data Lake](docs/phases/phase-2-databricks-data-lake.md) | Platform provisioning |
 | [Phase 3 — Data Pipeline](docs/phases/phase-3-pipeline.md) | Pipeline implementation |
 | [Phase 4 — CI/CD](docs/phases/phase-4-cicd.md) | Azure DevOps pipelines and templates |
+| [Phase 5 — Observability](docs/phases/phase-5-observability.md) | SLIs/SLOs, metrics, dashboards, alerts |
 | [ADR-001](docs/architecture/adr-001-databricks-cluster-limitation.md) | Databricks cluster limitation |
+| [ADR-002](docs/architecture/adr-002-observability-stack.md) | Observability stack selection |
 | [Operations](docs/operations/README.md) | Runbooks and procedures |
 | [Troubleshooting](docs/troubleshooting/README.md) | Known issues and fixes |
 
@@ -579,6 +624,14 @@ The project runs on a constrained budget. Controls in place:
 
 ---
 
+## Manual Resources
+
+Some observability resources were created manually in the Azure portal (Workbook, Action Group, Alert Rules). They are documented in the [Post-apply checklist](docs/operations/README.md) and must be recreated after each `terraform destroy` + `terraform apply` cycle.
+
+Migration to Terraform is planned for a later phase (see [ADR-002](docs/architecture/adr-002-observability-stack.md)).
+
+--- 
+
 ## Roadmap
 
 | Phase | Description | Status |
@@ -588,8 +641,8 @@ The project runs on a constrained budget. Controls in place:
 | **Phase 2** | Databricks Workspace and Data Lake | Completed |
 | **Phase 3** | Data pipeline with ingestion, validation, Delta | Completed |
 | **Phase 4** | CI/CD with Azure DevOps | Completed |
-| **Phase 5** | Observability: Prometheus, Grafana, SLOs | Next |
-| **Phase 6** | Security: RBAC, Managed Identities, Key Vault | Planned |
+| **Phase 5** | Observability: SLIs/SLOs, Application Insights, alerts | Completed |
+| **Phase 6** | Security: RBAC, Managed Identities, Key Vault | Next |
 | **Phase 7** | AI Integration: Azure OpenAI, AI Foundry | Planned |
 | **Phase 8** | AKS and containerized workloads | Planned |
 | **Phase 9** | Disaster recovery and resilience | Planned |
