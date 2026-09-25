@@ -12,6 +12,7 @@ from pyspark.sql.types import DoubleType, StringType, StructField, StructType
 
 from src.api.bcb_sgs import SERIES, fetch_series
 from src.utils.logging import get_logger
+from src.utils.pipeline_metrics import initialize as initialize_metrics
 
 logger = get_logger(__name__)
 
@@ -39,7 +40,7 @@ def ingest_series(
         end: End date.
 
     Returns:
-        DataFrame with columns: series, date, value.
+        DataFrame with columns: series, date, value, unit, frequency, ingested_at.
     """
     config = SERIES[series_key]
     raw_records = fetch_series(series_key, start, end)
@@ -65,12 +66,24 @@ def ingest_series(
         .select("series", "date", "value", "unit", "frequency", "ingested_at")
     )
 
+    metrics = initialize_metrics()
+    row_count = df.count()
+    metrics.rows_processed_total.add(
+        row_count,
+        attributes={"series": series_key, "stage": "ingest"},
+    )
+
+    date_bounds = df.agg(
+        F.min("date").alias("min_date"),
+        F.max("date").alias("max_date"),
+    ).collect()[0]
+
     logger.info(
         "Ingested series '%s': %d rows, %s to %s",
         series_key,
-        df.count(),
-        df.agg(F.min("date")).collect()[0][0],
-        df.agg(F.max("date")).collect()[0][0],
+        row_count,
+        date_bounds["min_date"],
+        date_bounds["max_date"],
     )
 
     return df

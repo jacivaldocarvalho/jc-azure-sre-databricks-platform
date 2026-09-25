@@ -49,6 +49,17 @@ module "databricks" {
   tags                              = var.tags
 }
 
+# Monitoring Module
+module "monitoring" {
+  source = "../../modules/monitoring"
+
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  environment         = var.environment
+  project_name        = var.project_name
+  tags                = var.tags
+}
+
 # Outputs
 output "resource_group_name" {
   value = azurerm_resource_group.main.name
@@ -76,4 +87,21 @@ output "storage_account_name" {
 
 output "storage_account_primary_dfs_endpoint" {
   value = module.datalake.primary_dfs_endpoint
+}
+
+output "monitor_workspace_id" {
+  value = module.monitoring.workspace_id
+}
+
+output "monitor_workspace_name" {
+  value = module.monitoring.workspace_name
+}
+
+output "monitor_query_endpoint" {
+  value = module.monitoring.query_endpoint
+}
+
+output "application_insights_connection_string" {
+  value     = module.monitoring.application_insights_connection_string
+  sensitive = true
 }

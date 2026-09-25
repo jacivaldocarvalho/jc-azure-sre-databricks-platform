@@ -27,3 +27,10 @@ pytest-spark==0.8.0
 
 # Code quality
 ruff==0.7.1
+
+# OpenTelemetry for metrics export
+opentelemetry-api==1.28.2
+opentelemetry-sdk==1.28.2
+opentelemetry-exporter-otlp-proto-grpc==1.28.2
+azure-monitor-opentelemetry-exporter==1.0.0b28
+azure-identity==1.18.0

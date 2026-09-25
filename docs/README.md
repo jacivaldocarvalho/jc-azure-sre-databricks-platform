@@ -21,10 +21,12 @@ Central documentation for the JC-Azure SRE Databricks Platform project.
 - [Phase 2 — Databricks and Data Lake](phases/phase-2-databricks-data-lake.md)
 - [Phase 3 — Data Pipeline](phases/phase-3-pipeline.md)
 - [Phase 4 — CI/CD with Azure DevOps](phases/phase-4-cicd.md)
+- [Phase 5 — Observability](phases/phase-5-observability.md)
 
 ### Architecture Decision Records
 
 - [ADR-001 — Databricks Cluster Limitation in Azure for Students](architecture/adr-001-databricks-cluster-limitation.md)
+- [ADR-002 — Observability Stack Selection](architecture/adr-002-observability-stack.md)
 
 ### Conventions
 

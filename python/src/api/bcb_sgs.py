@@ -12,6 +12,7 @@ Limitations:
     chunks to comply with the API's 10-year window limit (as of March 2025).
 """
 
+import time
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Iterator
@@ -20,6 +21,7 @@ from urllib.parse import urlencode
 import requests
 
 from src.utils.logging import get_logger
+from src.utils.pipeline_metrics import initialize as initialize_metrics
 
 logger = get_logger(__name__)
 
@@ -93,6 +95,7 @@ def fetch_series(
         )
 
     config = SERIES[series_key]
+    metrics = initialize_metrics()
     all_data: list[dict] = []
 
     for chunk_start, chunk_end in _date_chunks(start, end):
@@ -111,11 +114,29 @@ def fetch_series(
             chunk_end.isoformat(),
         )
 
-        response = requests.get(url, timeout=timeout)
-        response.raise_for_status()
+        start_time = time.time()
+        try:
+            response = requests.get(url, timeout=timeout)
+            response.raise_for_status()
+            data = response.json()
+            all_data.extend(data)
 
-        data = response.json()
-        all_data.extend(data)
+            metrics.api_requests_total.add(
+                1,
+                attributes={"series": series_key, "status": "success"},
+            )
+        except requests.RequestException:
+            metrics.api_requests_total.add(
+                1,
+                attributes={"series": series_key, "status": "error"},
+            )
+            raise
+        finally:
+            duration = time.time() - start_time
+            metrics.api_request_duration_seconds.record(
+                duration,
+                attributes={"series": series_key},
+            )
 
     logger.info("Fetched %d observations for series '%s'", len(all_data), series_key)
     return all_data
