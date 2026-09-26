@@ -1,0 +1,47 @@
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 3.0"
+    }
+  }
+}
+
+# Data source to reference the current subscription
+data "azurerm_subscription" "current" {}
+
+# =============================================================================
+# Role assignments for the Databricks Managed Identity on the Data Lake
+# =============================================================================
+
+# Grant the Databricks Managed Identity Storage Blob Data Contributor on the
+# Data Lake Storage Account. This allows the workspace to read and write
+# to the containers without using shared account keys.
+resource "azurerm_role_assignment" "databricks_storage" {
+  scope                = var.data_lake_storage_account_id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = var.databricks_managed_identity_principal_id
+
+  description = "Allow Databricks workspace to read and write to the Data Lake"
+}
+
+# =============================================================================
+# Role assignments for external service principals and users
+# =============================================================================
+
+# The Azure DevOps Service Principal is granted Contributor at the Resource
+# Group scope instead of the Subscription scope. This follows the principle
+# of least privilege while allowing the CI/CD pipeline to manage all
+# resources in the project's Resource Group.
+#
+# Note: this assignment references a principal that was created outside of
+# Terraform (during Phase 4). The principal ID is provided as a variable.
+resource "azurerm_role_assignment" "devops_contributor_rg" {
+  count = var.devops_principal_id != "" ? 1 : 0
+
+  scope                = var.resource_group_id
+  role_definition_name = "Contributor"
+  principal_id         = var.devops_principal_id
+
+  description = "Allow Azure DevOps pipelines to manage resources in the project Resource Group"
+}

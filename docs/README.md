@@ -7,8 +7,8 @@ Central documentation for the JC-Azure SRE Databricks Platform project.
 | Directory | Purpose |
 |-----------|---------|
 | `phases/` | Detailed record of each project phase (what, why, how, validation) |
-| `architecture/` | Architecture Decision Records (ADRs) and diagrams |
-| `operations/` | Runbooks and operational procedures |
+| `architecture/` | Architecture Decision Records (ADRs), security model, and diagrams |
+| `operations/` | Runbooks, procedures, and post-apply checklists |
 | `troubleshooting/` | Guides for common issues and recovery |
 | `conventions.md` | Project-wide standards and conventions |
 
@@ -22,15 +22,23 @@ Central documentation for the JC-Azure SRE Databricks Platform project.
 - [Phase 3 — Data Pipeline](phases/phase-3-pipeline.md)
 - [Phase 4 — CI/CD with Azure DevOps](phases/phase-4-cicd.md)
 - [Phase 5 — Observability](phases/phase-5-observability.md)
+- [Phase 6 — Security](phases/phase-6-security.md)
+
+### Architecture
+
+- [Security Model](architecture/security-model.md) — reference document
 
 ### Architecture Decision Records
 
 - [ADR-001 — Databricks Cluster Limitation in Azure for Students](architecture/adr-001-databricks-cluster-limitation.md)
 - [ADR-002 — Observability Stack Selection](architecture/adr-002-observability-stack.md)
+- [ADR-003 — Security Model Decisions](architecture/adr-003-security-model.md)
 
-### Conventions
+### Operations and Troubleshooting
 
-- [Project Conventions](conventions.md)
+- [Operations](operations/README.md) — runbooks and post-apply checklist
+- [Troubleshooting](troubleshooting/README.md) — common issues and fixes
+- [Conventions](conventions.md) — project standards
 
 ## How to Use This Documentation
 
@@ -43,7 +51,9 @@ Each phase document follows a consistent structure:
 5. **Lessons Learned** — what changed and why
 6. **Artifacts** — files, resources, and outputs produced
 
-This consistency makes it easy to audit the project chronologically and to onboard new contributors.
+ADRs follow the Nygard pattern: Status, Context, Decision, Consequences, Alternatives, References.
+
+The security model is a reference document, organized by asset inventory, threat model, identities, role assignments, authentication flows, and limitations.
 
 ## Audience
 
