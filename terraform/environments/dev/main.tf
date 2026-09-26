@@ -60,6 +60,27 @@ module "monitoring" {
   tags                = var.tags
 }
 
+# Key Vault Module
+module "keyvault" {
+  source = "../../modules/keyvault"
+
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  environment         = var.environment
+  project_name        = var.project_name
+  tags                = var.tags
+}
+
+# Security Module
+module "security" {
+  source = "../../modules/security"
+
+  resource_group_id                       = azurerm_resource_group.main.id
+  data_lake_storage_account_id            = module.datalake.storage_account_id
+  databricks_managed_identity_principal_id = module.keyvault.databricks_managed_identity_principal_id
+  devops_principal_id                     = var.devops_principal_id
+}
+
 # Outputs
 output "resource_group_name" {
   value = azurerm_resource_group.main.name
@@ -104,4 +125,32 @@ output "monitor_query_endpoint" {
 output "application_insights_connection_string" {
   value     = module.monitoring.application_insights_connection_string
   sensitive = true
+}
+
+output "key_vault_id" {
+  value = module.keyvault.key_vault_id
+}
+
+output "key_vault_name" {
+  value = module.keyvault.key_vault_name
+}
+
+output "key_vault_uri" {
+  value = module.keyvault.key_vault_uri
+}
+
+output "databricks_managed_identity_id" {
+  value = module.keyvault.databricks_managed_identity_id
+}
+
+output "databricks_managed_identity_client_id" {
+  value = module.keyvault.databricks_managed_identity_client_id
+}
+
+output "databricks_storage_role_id" {
+  value = module.security.databricks_storage_role_id
+}
+
+output "devops_contributor_role_id" {
+  value = module.security.devops_contributor_role_id
 }

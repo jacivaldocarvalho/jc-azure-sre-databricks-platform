@@ -79,3 +79,9 @@ variable "tags" {
     ManagedBy   = "Terraform"
   }
 }
+
+variable "devops_principal_id" {
+  description = "Principal ID of the Azure DevOps Service Principal. Leave empty to skip the assignment."
+  type        = string
+  default     = ""
+}
