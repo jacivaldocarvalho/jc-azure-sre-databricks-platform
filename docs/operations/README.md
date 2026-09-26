@@ -24,8 +24,7 @@ Planned runbooks, to be added as the project progresses:
 
 | Runbook | Target Phase | Description |
 |---------|--------------|-------------|
-| `destroy-and-recreate.md` | Current | Destroy and recreate the environment from scratch |
-| `rotate-credentials.md` | Phase 6 | Rotate Service Principal and Databricks tokens |
+| `rotate-credentials.md` | Phase 6 (current) | Rotate Service Principal and Key Vault secrets |
 | `backup-and-restore.md` | Phase 9 | Back up and restore critical data |
 | `incident-response.md` | Phase 5 | Response procedure for common incidents |
 | `cost-review.md` | Phase 10 | Monthly cost review procedure |
@@ -53,7 +52,7 @@ make terraform-destroy
 
 Takes approximately 5 to 10 minutes.
 
-**Note:** the Terraform state backend (`tfstate-rg` resource group and `tfstatejcsredatabricks` storage account) is **not** destroyed, as it is not managed by this Terraform configuration. To remove it, do so manually.
+**Note:** the Terraform state backend (`tfstate-rg` resource group and `tfstatejcsredatabricks` storage account) is **not** destroyed, as it is not managed by this Terraform configuration.
 
 ### 3. Run the Data Pipeline Locally
 
@@ -89,17 +88,52 @@ Removes Delta tables, Pytest cache, and Python bytecode.
 
 ## Post-Apply Checklist
 
-Some observability resources were created manually in the Azure portal during Phase 5 (see ADR-002). They are **not** managed by Terraform and must be recreated after each `terraform destroy` + `terraform apply` cycle.
+Some resources were created manually or are not fully managed by Terraform. They must be recreated or verified after each `terraform destroy` + `terraform apply` cycle.
 
 ### Why manual
 
-For speed of iteration and KQL query tuning, the Workbook and alert rules were created in the portal first. The migration to Terraform is planned for a future phase. Until then, the following procedure ensures the observability stack is complete.
+For speed of iteration and KQL query tuning, the Workbook and alert rules were created in the portal first. The migration to Terraform is planned for a future phase. Additionally, the Azure DevOps Service Principal scope change was applied manually since the SP was created outside of Terraform.
 
-### Resources to recreate
+### Resources to recreate or verify
 
-After `make terraform-apply`, recreate these resources in order:
+After `make terraform-apply`, follow these steps:
 
-#### 1. Action Group
+#### 1. Application Insights Secret in Key Vault
+
+After the new Application Insights is provisioned by Terraform, populate the Key Vault with the new connection string:
+
+```bash
+cd terraform/environments/dev
+
+# Get the connection string
+terraform output -raw application_insights_connection_string > /tmp/ai-conn.txt
+
+# Ensure no trailing newline
+tr -d '\n' < /tmp/ai-conn.txt > /tmp/ai-conn-clean.txt
+
+# Store in Key Vault
+az keyvault secret set \
+  --vault-name dev-sredatabricks-kv \
+  --name "applicationinsights-connection-string" \
+  --file /tmp/ai-conn-clean.txt
+
+# Clean up temporary files
+rm /tmp/ai-conn.txt /tmp/ai-conn-clean.txt
+```
+
+If the secret already exists (soft-deleted from previous destroy), purge it first:
+
+```bash
+az keyvault secret delete \
+  --vault-name dev-sredatabricks-kv \
+  --name "applicationinsights-connection-string" 2>/dev/null || true
+
+az keyvault secret purge \
+  --vault-name dev-sredatabricks-kv \
+  --name "applicationinsights-connection-string" 2>/dev/null || true
+```
+
+#### 2. Action Group
 
 | Field | Value |
 |-------|-------|
@@ -111,7 +145,7 @@ After `make terraform-apply`, recreate these resources in order:
 
 Location: **Monitor** → **Alerts** → **Action groups** → **Create**.
 
-#### 2. Workbook
+#### 3. Workbook
 
 | Field | Value |
 |-------|-------|
@@ -123,7 +157,7 @@ The workbook has five panels. The KQL queries for each panel are documented in `
 
 **Note:** For the freshness panel, use `tolong(valueMax)` before passing to `datetime_add()` to avoid the type error.
 
-#### 3. Alert Rules
+#### 4. Alert Rules
 
 Create four alert rules against Application Insights `dev-sredatabricks-ai`:
 
@@ -138,19 +172,193 @@ All rules reference the `sre-oncall` action group.
 
 The full KQL queries for each rule are documented in `docs/phases/phase-5-observability.md`.
 
-### Verification
+#### 5. Verify Service Principal Scope
 
-After recreating the manual resources:
+After recreating the environment, verify that the Azure DevOps Service Principal still has Contributor at the Resource Group scope:
 
 ```bash
-# Confirm alert rules exist
-az monitor scheduled-query list \
-  --resource-group dev-sredatabricks-rg \
-  --query "[].{Name:name, Enabled:enabled, Severity:severity}" \
+SP_OID=$(az ad sp list --display-name "jc-sre-databricks-pipeline" --query "[0].id" -o tsv)
+
+az role assignment list \
+  --assignee "$SP_OID" \
+  --all \
+  --query "[].{Role:roleDefinitionName, Scope:scope}" \
   -o table
 ```
 
-Then open the Workbook in the portal and confirm all five panels render without errors.
+**Expected:** Contributor at the Resource Group scope.
+
+If the assignment is missing (e.g., after a fresh recreation of the Service Principal), recreate it:
+
+```bash
+az role assignment create \
+  --assignee "$SP_OID" \
+  --role "Contributor" \
+  --scope "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/dev-sredatabricks-rg"
+```
+
+#### 6. Verify Managed Identity Role Assignments
+
+The Terraform `security` module recreates the role assignments automatically. Verify:
+
+```bash
+# Databricks Managed Identity on Storage
+az role assignment list \
+  --scope "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/dev-sredatabricks-rg/providers/Microsoft.Storage/storageAccounts/devsredata" \
+  --query "[].{Principal:principalId, Role:roleDefinitionName}" \
+  -o table
+```
+
+**Expected:** one assignment with `Storage Blob Data Contributor`.
+
+```bash
+# Databricks Managed Identity on Key Vault
+az role assignment list \
+  --scope "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/dev-sredatabricks-rg/providers/Microsoft.KeyVault/vaults/dev-sredatabricks-kv" \
+  --query "[].{Principal:principalId, Role:roleDefinitionName}" \
+  -o table
+```
+
+**Expected:** two assignments (Key Vault Administrator for the user, Key Vault Secrets User for the Managed Identity).
+
+---
+
+## Security Auditing
+
+The following checks should be performed periodically to maintain the security posture. See `docs/architecture/security-model.md` for the full model.
+
+### Quarterly Audit
+
+#### 1. Review role assignments
+
+```bash
+# All role assignments in the subscription
+az role assignment list \
+  --all \
+  --query "[].{Principal:principalName, Type:principalType, Role:roleDefinitionName, Scope:scope}" \
+  -o table
+```
+
+**What to check:**
+- No unexpected Service Principals have access
+- No role assignments at the subscription scope other than the Owner
+- The Azure DevOps SP has Contributor only at the Resource Group
+
+#### 2. Review secrets and credentials
+
+```bash
+# List all secrets in Key Vault
+az keyvault secret list \
+  --vault-name dev-sredatabricks-kv \
+  --query "[].{Name:name, Enabled:attributes.enabled, Expires:attributes.expires}" \
+  -o table
+
+# List all credentials (client secrets) of the Azure DevOps App Registration
+az ad app credential list \
+  --id f0fa3958-4d24-45d1-bdb4-e8af5f4d7147 \
+  --query "[].{Name:displayName, EndDate:endDateTime}" \
+  -o table
+```
+
+**What to check:**
+- All secrets are actively used
+- No secrets near expiration without a rotation plan
+- No orphaned secrets
+
+**Note:** the Azure DevOps App Registration uses OIDC, so it should have **no** client secrets. If any appear, investigate and revoke.
+
+#### 3. Review the Managed Identity
+
+```bash
+# Confirm the Managed Identity exists and is assigned to the workspace
+az identity show \
+  --name dev-sredatabricks-dbw-mi \
+  --resource-group dev-sredatabricks-rg \
+  --query "{Name:name, ClientId:clientId, PrincipalId:principalId}" \
+  -o table
+
+# List all role assignments for the Managed Identity
+MI_PRINCIPAL=$(az identity show --name dev-sredatabricks-dbw-mi --resource-group dev-sredatabricks-rg --query principalId -o tsv)
+
+az role assignment list \
+  --assignee "$MI_PRINCIPAL" \
+  --all \
+  --query "[].{Role:roleDefinitionName, Scope:scope}" \
+  -o table
+```
+
+**What to check:**
+- Only the expected roles are present (Key Vault Secrets User, Storage Blob Data Contributor)
+- No unexpected scope expansion
+
+#### 4. Review the Key Vault access
+
+```bash
+az role assignment list \
+  --scope "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/dev-sredatabricks-rg/providers/Microsoft.KeyVault/vaults/dev-sredatabricks-kv" \
+  --query "[].{Principal:principalName, Type:principalType, Role:roleDefinitionName}" \
+  -o table
+```
+
+**What to check:**
+- Only the operator and the Databricks Managed Identity have access
+- No Service Principals have access unless explicitly required
+
+### Rotation Procedures
+
+#### Rotating the Application Insights connection string
+
+1. Recreate the Application Insights (or generate a new connection string):
+
+```bash
+# This is normally done by terraform destroy + apply on the monitoring module
+cd terraform/environments/dev
+terraform apply -replace=module.monitoring.azurerm_application_insights.main
+```
+
+2. Update the Key Vault secret:
+
+```bash
+terraform output -raw application_insights_connection_string > /tmp/ai-conn.txt
+tr -d '\n' < /tmp/ai-conn.txt > /tmp/ai-conn-clean.txt
+
+az keyvault secret set \
+  --vault-name dev-sredatabricks-kv \
+  --name "applicationinsights-connection-string" \
+  --file /tmp/ai-conn-clean.txt
+
+rm /tmp/ai-conn.txt /tmp/ai-conn-clean.txt
+```
+
+3. Restart any process that holds the connection string in memory (the local pipeline will pick it up on the next run).
+
+#### Rotating the Azure CLI session
+
+The Azure CLI session is refreshed automatically on `az login`. To force a refresh:
+
+```bash
+az logout
+az login
+az account set --subscription <SUBSCRIPTION_ID>
+```
+
+The session is used by both Terraform and the Python pipeline in local development.
+
+#### Revoking the Azure DevOps Federated Credential
+
+If the Service Connection is compromised or needs recreation:
+
+```bash
+# List federated credentials
+az ad app federated-credential list --id f0fa3958-4d24-45d1-bdb4-e8af5f4d7147 -o table
+
+# Delete a specific credential
+az ad app federated-credential delete \
+  --id f0fa3958-4d24-45d1-bdb4-e8af5f4d7147 \
+  --federated-credential-id <credential-name>
+```
+
+Recreate it with the exact issuer and subject that Azure DevOps generates (see `docs/phases/phase-4-cicd.md`).
 
 ---
 
@@ -167,6 +375,7 @@ Then open the Workbook in the portal and confirm all five panels render without 
 
 - Confirm the correct subscription is active: `az account show`
 - Confirm the `.env` file is present and populated
+- Confirm the `AZURE_USE_CLI=true` variable is set for local development
 
 ### After Each Session
 
@@ -191,5 +400,6 @@ This is a solo portfolio project. There is no on-call rotation. The escalation p
 
 - [Phases](../phases/) — what was implemented
 - [Architecture](../architecture/) — architectural decisions
+- [Security Model](../architecture/security-model.md) — full security posture
 - [Troubleshooting](../troubleshooting/) — problem resolution guides
 - [Conventions](../conventions.md) — project standards

@@ -8,13 +8,13 @@ Azure-Native SRE & Platform Engineering with Databricks and AI Integration
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB)](https://python.org)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-AKS-326CE5)](https://kubernetes.io)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Phase](https://img.shields.io/badge/Phase-5-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
+[![Phase](https://img.shields.io/badge/Phase-6-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
 
 ---
 
 ## Project Status
 
-**Phase 5 — Observability completed.**
+**Phase 6 — Security completed.**
 
 | Phase | Description | Status |
 |-------|-------------|--------|
@@ -24,8 +24,8 @@ Azure-Native SRE & Platform Engineering with Databricks and AI Integration
 | **Phase 3** | Data pipeline: ingestion, validation, transformation, Delta | Completed |
 | **Phase 4** | CI/CD with Azure DevOps (YAML ready, execution pending billing) | Completed |
 | **Phase 5** | Observability: SLIs/SLOs, Application Insights, alerts | Completed |
-| **Phase 6** | Security: RBAC, Managed Identities, Key Vault | Next |
-| **Phase 7** | AI Integration: Azure OpenAI, AI Foundry | Planned |
+| **Phase 6** | Security: Key Vault, RBAC, Managed Identities, cleanup | Completed |
+| **Phase 7** | AI Integration: Azure OpenAI, AI Foundry | Next |
 | **Phase 8** | AKS and containerized workloads | Planned |
 | **Phase 9** | Disaster recovery and resilience | Planned |
 | **Phase 10** | Cost optimization and governance | Planned |
@@ -274,6 +274,44 @@ A mid-sized retail company with operations in multiple regions needs to:
 - [x] Test suite with 10 unit and smoke tests
 - [x] Automated local environment setup
 
+### Phase 4 — CI/CD with Azure DevOps
+
+- [x] Workload Identity Federation (OIDC) — no secrets in Azure DevOps
+- [x] Terraform pipeline with validate, plan, and apply stages
+- [x] Python pipeline with lint, test, and coverage
+- [x] Reusable YAML templates for each stage
+- [x] Path filters to avoid unnecessary runs
+- [x] Manual approval gate for Terraform apply via Azure DevOps Environment
+- [x] Branch policies and environment configuration
+- [x] Documented execution limitation (Azure for Students cannot enable billing)
+
+### Phase 5 — Observability
+
+- [x] SLIs and SLOs defined before choosing tools (`monitoring/slos.md`)
+- [x] Error budget policy with tiered operational actions
+- [x] OpenTelemetry instrumentation across all pipeline modules
+- [x] Seven metric instruments exposed (counters, histograms, up-down counter)
+- [x] Application Insights as metrics backend
+- [x] Log Analytics Workspace for backend storage
+- [x] Workbook `Pipeline Overview` with five panels
+- [x] Four SLO-aligned alert rules (failure, stale data, low volume, slow)
+- [x] Action group `sre-oncall` for email notifications
+- [x] ADR-002 documenting the observability stack selection
+
+### Phase 6 — Security
+
+- [x] Azure Key Vault with RBAC authorization
+- [x] Application Insights connection string migrated to Key Vault
+- [x] Pipeline resolves secrets from Key Vault at runtime
+- [x] `AzureCliCredential` locally, `DefaultAzureCredential` in Azure
+- [x] User-Assigned Managed Identity for Databricks
+- [x] Databricks Managed Identity has `Storage Blob Data Contributor` on the Data Lake
+- [x] Databricks Managed Identity has `Key Vault Secrets User` on the Key Vault
+- [x] Azure DevOps Service Principal scope reduced from Subscription to Resource Group
+- [x] Legacy Service Principal removed (Contributor at subscription + orphan secret)
+- [x] Security model documented in `docs/architecture/security-model.md`
+- [x] ADR-003 documenting the security decisions
+
 ---
 
 ## CI/CD
@@ -340,6 +378,42 @@ The original plan was to use Azure Monitor managed Prometheus with Grafana. Duri
 The Workbook and alert rules were created manually in the portal for iteration speed and are documented in the [Post-apply checklist](docs/operations/README.md). Migration to Terraform is planned for a later phase.
 
 See [Phase 5 — Observability](docs/phases/phase-5-observability.md) for details.
+
+---
+
+## Security
+
+The project adopts a least-privilege posture with zero long-lived secrets for service-to-service authentication.
+
+### Authentication flows
+
+| Flow | Identity | Mechanism |
+|------|----------|-----------|
+| Local development | Operator | `az login` (Azure CLI) |
+| CI/CD (Azure DevOps) | Service Principal | Workload Identity Federation (OIDC) |
+| Databricks runtime | User-Assigned Managed Identity | Managed Identity |
+| Pipeline secrets | Key Vault | RBAC-authorized access |
+
+### Least privilege in practice
+
+| Identity | Scope |
+|----------|-------|
+| Azure DevOps Service Principal | Contributor at the project Resource Group |
+| Databricks Managed Identity | Key Vault Secrets User on the Key Vault |
+| Databricks Managed Identity | Storage Blob Data Contributor on the Data Lake |
+| Operator | Key Vault Administrator on the Key Vault |
+
+### Key Vault
+
+Secrets are centralized in Azure Key Vault `dev-sredatabricks-kv` with RBAC-based access. The pipeline resolves the Application Insights connection string from Key Vault at runtime, using `AzureCliCredential` locally (via `AZURE_USE_CLI=true`) and `DefaultAzureCredential` in Azure.
+
+### Cleanup performed in Phase 6
+
+A legacy Service Principal with Contributor at the subscription scope was identified and removed, along with its client secret. This eliminated an orphaned credential that had caused a real security incident during local development.
+
+The full security posture is documented in [docs/architecture/security-model.md](docs/architecture/security-model.md). The architectural decisions are captured in [ADR-003](docs/architecture/adr-003-security-model.md).
+
+See [Phase 6 — Security](docs/phases/phase-6-security.md) for the implementation record.
 
 ---
 
@@ -490,7 +564,10 @@ jc-azure-sre-databricks-platform/
 │   ├── modules/
 │   │   ├── networking/       # VNet, subnets, NSG
 │   │   ├── datalake/         # ADLS Gen2 and containers
-│   │   └── databricks/       # Workspace with VNet Injection
+│   │   ├── databricks/       # Workspace with VNet Injection
+│   │   ├── monitoring/       # Application Insights, Log Analytics
+│   │   ├── keyvault/         # Key Vault and Managed Identity
+│   │   └── security/         # Role assignments
 │   └── environments/
 │       ├── dev/
 │       ├── staging/
@@ -516,7 +593,7 @@ jc-azure-sre-databricks-platform/
 │
 ├── monitoring/
 │   └── slos.md              # SLIs, SLOs, error budget policy
-├── security/
+├── security/                 # RBAC and security-related Terraform (module)
 ├── kubernetes/
 ├── scripts/
 │   └── setup-local.sh
@@ -528,10 +605,16 @@ jc-azure-sre-databricks-platform/
     │   ├── phase-0-foundation.md
     │   ├── phase-1-network.md
     │   ├── phase-2-databricks-data-lake.md
-    │   └── phase-3-pipeline.md
+    │   ├── phase-3-pipeline.md
+    │   ├── phase-4-cicd.md
+    │   ├── phase-5-observability.md
+    │   └── phase-6-security.md
     ├── architecture/
     │   ├── README.md
-    │   └── adr-001-databricks-cluster-limitation.md
+    │   ├── security-model.md
+    │   ├── adr-001-databricks-cluster-limitation.md
+    │   ├── adr-002-observability-stack.md
+    │   └── adr-003-security-model.md
     ├── operations/
     │   └── README.md
     └── troubleshooting/
@@ -587,8 +670,11 @@ Detailed documentation is available under `docs/`:
 | [Phase 3 — Data Pipeline](docs/phases/phase-3-pipeline.md) | Pipeline implementation |
 | [Phase 4 — CI/CD](docs/phases/phase-4-cicd.md) | Azure DevOps pipelines and templates |
 | [Phase 5 — Observability](docs/phases/phase-5-observability.md) | SLIs/SLOs, metrics, dashboards, alerts |
+| [Phase 6 — Security](docs/phases/phase-6-security.md) | Key Vault, RBAC, Managed Identities, cleanup |
+| [Security Model](docs/architecture/security-model.md) | Full security posture reference |
 | [ADR-001](docs/architecture/adr-001-databricks-cluster-limitation.md) | Databricks cluster limitation |
 | [ADR-002](docs/architecture/adr-002-observability-stack.md) | Observability stack selection |
+| [ADR-003](docs/architecture/adr-003-security-model.md) | Security model decisions |
 | [Operations](docs/operations/README.md) | Runbooks and procedures |
 | [Troubleshooting](docs/troubleshooting/README.md) | Known issues and fixes |
 
@@ -642,8 +728,8 @@ Migration to Terraform is planned for a later phase (see [ADR-002](docs/architec
 | **Phase 3** | Data pipeline with ingestion, validation, Delta | Completed |
 | **Phase 4** | CI/CD with Azure DevOps | Completed |
 | **Phase 5** | Observability: SLIs/SLOs, Application Insights, alerts | Completed |
-| **Phase 6** | Security: RBAC, Managed Identities, Key Vault | Next |
-| **Phase 7** | AI Integration: Azure OpenAI, AI Foundry | Planned |
+| **Phase 6** | Security: Key Vault, RBAC, Managed Identities, cleanup | Completed |
+| **Phase 7** | AI Integration: Azure OpenAI, AI Foundry | Next |
 | **Phase 8** | AKS and containerized workloads | Planned |
 | **Phase 9** | Disaster recovery and resilience | Planned |
 | **Phase 10** | Cost optimization and governance | Planned |
