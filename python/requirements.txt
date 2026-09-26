@@ -34,3 +34,7 @@ opentelemetry-sdk==1.28.2
 opentelemetry-exporter-otlp-proto-grpc==1.28.2
 azure-monitor-opentelemetry-exporter==1.0.0b28
 azure-identity==1.18.0
+
+# Azure Key Vault integration
+azure-keyvault-secrets==4.9.0
+azure-identity==1.18.0
