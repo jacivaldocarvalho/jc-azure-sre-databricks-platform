@@ -8,13 +8,13 @@ Azure-Native SRE & Platform Engineering with Databricks and AI Integration
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB)](https://python.org)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-AKS-326CE5)](https://kubernetes.io)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Phase](https://img.shields.io/badge/Phase-6-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
+[![Phase](https://img.shields.io/badge/Phase-7-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
 
 ---
 
 ## Project Status
 
-**Phase 6 — Security completed.**
+**Phase 7 — AI Integration completed (with documented limitation).**
 
 | Phase | Description | Status |
 |-------|-------------|--------|
@@ -22,78 +22,125 @@ Azure-Native SRE & Platform Engineering with Databricks and AI Integration
 | **Phase 1** | Base network: VNet, subnets, NSG, remote backend | Completed |
 | **Phase 2** | Databricks Workspace, ADLS Gen2, VNet Injection, SCC | Completed |
 | **Phase 3** | Data pipeline: ingestion, validation, transformation, Delta | Completed |
-| **Phase 4** | CI/CD with Azure DevOps (YAML ready, execution pending billing) | Completed |
+| **Phase 4** | CI/CD with Azure DevOps (code ready, execution blocked by billing) | Completed |
 | **Phase 5** | Observability: SLIs/SLOs, Application Insights, alerts | Completed |
 | **Phase 6** | Security: Key Vault, RBAC, Managed Identities, cleanup | Completed |
-| **Phase 7** | AI Integration: Azure OpenAI, AI Foundry | Next |
-| **Phase 8** | AKS and containerized workloads | Planned |
-| **Phase 9** | Disaster recovery and resilience | Planned |
-| **Phase 10** | Cost optimization and governance | Planned |
+| **Phase 7** | AI Integration: executive summaries with fallback strategy | Completed |
+| **Phase 8** | AKS and containerized workloads | Next |
 
 ---
 
 ## Problem
 
-Running production-grade data and AI workloads on Azure requires:
+Provisioning a data platform on Azure while respecting SRE principles requires solving several challenges simultaneously:
 
-- Complex network segmentation and secure access to PaaS services
-- Infrastructure as Code for reproducibility and auditability
-- Observability tailored to data pipelines and ML workloads
-- Cost control and FinOps practices
-- Integration between data platforms and AI services
-- SRE principles applied to cloud-native data infrastructure
+- **Infrastructure as Code** that is modular, auditable, and portable across environments
+- **Network segmentation** with private endpoints, delegated subnets, and service endpoints
+- **Secure authentication** without long-lived secrets (OIDC, Managed Identity)
+- **Observability** defined by SLIs and SLOs, not by the tools that happen to be available
+- **Cost control** under a constrained budget (Azure for Students)
+- **Documented trade-offs** when the platform imposes limitations that cannot be worked around
 
-Most projects address these challenges in isolation. This project demonstrates an integrated approach.
+Most SRE portfolios show isolated pieces of these challenges: a Terraform file, a CI/CD pipeline, a dashboard. This project demonstrates how they integrate.
 
 ---
 
 ## Solution
 
-JC-Azure SRE/Databricks Platform provisions and operates a complete Azure-native data and AI platform using SRE and DevOps practices.
+A modular Azure platform built with Terraform, complemented by a Python data pipeline using PySpark and Delta Lake, and instrumented for observability. The project prioritizes:
 
-**Key capabilities:**
+- **Infrastructure as Code** — 7 Terraform modules with remote state, multi-environment structure, and reproducible provisioning
+- **Security by design** — Key Vault for secrets, Managed Identity for service-to-service authentication, RBAC with least privilege, and no shared account keys
+- **SLO-driven observability** — SLIs and SLOs defined before any tool was chosen
+- **Documented limitations** — ADRs explain every significant decision, including what could not be delivered and why
+- **Local-first development** — the data pipeline runs and is tested locally before any cloud dependency
+- **Data engineering** — a functional pipeline ingesting real data from the Brazilian Central Bank, validated with Pandera, transformed with PySpark, and persisted in Delta Lake
+- **AI integration** — executive summary generation with a fallback strategy for environments where Azure OpenAI is not provisionable
 
-- Infrastructure as Code with Terraform (modular, multi-environment)
-- Network segmentation with Private Endpoints and subnet delegation
-- Databricks Workspace with VNet Injection and Secure Cluster Connectivity (Premium tier)
-- ADLS Gen2 for data lake with structured containers
-- Local-first data pipeline with PySpark and Delta Lake
-- Ingestion from real public APIs (BCB SGS)
-- Declarative schema validation with Pandera
-- CI/CD pipelines with Azure DevOps (planned)
-- Observability with Prometheus and Grafana (planned)
-- Security with RBAC and Managed Identities (planned)
-- Integration with Azure OpenAI and AI Foundry (planned)
+The project intentionally does not attempt to be a production platform. It is a demonstration of professional engineering practices applied to a realistic scenario, executed under the constraints of an Azure for Students subscription.
 
 ---
 
-## Real-World Use Case
+## Applicability
 
-### Scenario: Retail Company — Real-Time Customer Intelligence Platform
+The patterns demonstrated in this project apply to a range of real-world scenarios.
 
-A mid-sized retail company with operations in multiple regions needs to:
+### Patterns and where they apply
 
-- Ingest customer interaction events from e-commerce, mobile app, and physical stores
-- Process and enrich data continuously for near real-time analytics
-- Train recommendation and churn prediction models on historical data
-- Serve AI-powered insights to business teams and downstream applications
-- Maintain compliance with data protection regulations (LGPD/GDPR)
-- Control costs while scaling with seasonal demand spikes
+| Pattern | Applies to |
+|---------|-----------|
+| Modular Terraform with remote state | Any Azure project with multiple environments |
+| VNet Injection for managed services | Any Databricks, Synapse, or managed compute deployment |
+| Zero-secret authentication (OIDC + Managed Identity) | Any organization moving away from API keys and static credentials |
+| SLO-driven observability | Any team that wants meaningful alerts instead of dashboard noise |
+| Documented ADRs with alternatives | Any project where technical decisions need to survive turnover |
+| Fallback strategies for restricted environments | Any developer on a constrained subscription or sandbox |
 
-### How This Project Addresses the Scenario
+### When this project is directly applicable
 
-| Business Need | Platform Capability |
-|---------------|--------------------|
-| Ingest events from multiple sources | ADLS Gen2 containers (`raw`) with Event Hubs integration (Phase 7+) |
-| Process and enrich data continuously | PySpark pipeline with Delta Lake (Phase 3) |
-| Train recommendation and churn models | Databricks ML runtime and MLflow (Phase 7+) |
-| Serve AI insights to business teams | Azure OpenAI and AI Foundry endpoints (Phase 7) |
-| Ensure compliance and data protection | VNet Injection, Private Endpoints, RBAC, Key Vault (Phases 1, 2, 6) |
-| Control costs during demand spikes | Aggressive auto-termination, FinOps tagging (Phase 10) |
-| Monitor pipeline and model health | Prometheus, Grafana, SLOs, alerting (Phase 5) |
-| Automate deployment and rollback | Azure DevOps pipelines with Terraform (Phase 4) |
+- A small team starting an Azure data platform from scratch
+- An SRE/DevOps engineer who needs a reference implementation for Databricks VNet Injection with SCC
+- A developer learning how to build zero-secret authentication flows with OIDC and Managed Identity
+- A team transitioning from ad-hoc infrastructure to Terraform with proper module boundaries
+- Anyone who needs a reference for documenting platform limitations honestly
 
-### Data Flow (Target State)
+### When it is not applicable
+
+This is not a production-ready blueprint for the following scenarios:
+
+- **Production-scale streaming pipelines** — would require Event Hubs or Kafka, which are not part of this project
+- **Multi-region deployments** — would require Traffic Manager, geo-replication, and cross-region state management
+- **Enterprise compliance** — would require Defender for Cloud, Azure Policy, SIEM integration, and continuous audit
+- **High-throughput data processing** — the pipeline is designed for batch jobs with modest data volumes
+- **MLOps at scale** — the AI integration is a demonstration, not an ML platform
+
+The distinction is intentional: the project is honest about its scope.
+
+---
+
+## Current State vs. Target State
+
+The project was designed as a multi-phase initiative. Due to limitations of the Azure for Students subscription, some phases could not be fully executed. The table below shows what was delivered and what remains.
+
+| Capability | Designed | Delivered | Notes |
+|-----------|----------|-----------|-------|
+| Terraform modules | 7 | **7** | All validated |
+| Network segmentation | Yes | **Yes** | 6 subnets, delegations, service endpoints |
+| Databricks VNet Injection | Yes | **Yes** | SCC, `NoAzureDatabricksRules` |
+| Data pipeline (batch) | Yes | **Yes** | PySpark + Delta, 10 tests passing |
+| Security (Key Vault, MI, RBAC) | Yes | **Yes** | Zero-secret authentication |
+| Observability (SLIs/SLOs) | Yes | **Yes** | Application Insights, workbook, 4 alerts |
+| AI integration | Yes | **Code ready** | Fallback strategy in use; Azure OpenAI not provisionable |
+| CI/CD pipelines | Yes | **Code only** | Cannot execute (billing restriction) |
+| Databricks cluster | Yes | **No** | SKU not available on for Students |
+| Azure OpenAI | Yes | **Code only** | Quota restriction on for Students |
+| AKS cluster | Planned | **No** | Not started (Phase 8) |
+| Disaster recovery | Planned | **No** | Not started (Phase 9) |
+| Cost optimization | Planned | **No** | Not started (Phase 10) |
+
+### What is fully functional
+
+- Terraform infrastructure (all modules provision correctly)
+- Local data pipeline (runs end-to-end with real data)
+- Observability (metrics flow to Application Insights, alerts are configured)
+- Security model (Key Vault, Managed Identity, RBAC all active)
+
+### What is implemented but not executable in the current environment
+
+- **CI/CD pipelines** — the YAML is complete and validated. Execution requires a Pay-As-You-Go subscription for Azure DevOps billing.
+- **Azure OpenAI integration** — the Terraform module and Python client are ready. Provisioning requires a subscription with Azure OpenAI quota.
+
+### What has not been started
+
+- AKS workloads, disaster recovery, and cost optimization (Phases 8, 9, 10).
+
+This transparency is intentional. The ADRs document the reasoning behind each limitation.
+
+---
+
+## Target Architecture (Complete Vision)
+
+The diagram below represents the **full target architecture** if all phases were completed. In the current environment, only the components in the left half (through Phase 7) are operational.
 
 ```
    ┌──────────────────────────────────────────────────────────────┐
@@ -106,17 +153,14 @@ A mid-sized retail company with operations in multiple regions needs to:
                               │
                               ▼
                     ┌─────────────────────┐
-                    │   Azure Event Hubs  │
+                    │   Azure Event Hubs  │   [Not implemented]
                     │   (Streaming)       │
                     └──────────┬──────────┘
                                │
                                ▼
                     ┌─────────────────────┐
-                    │  Databricks         │
-                    │  Workspace          │
-                    │                     │
-                    │  Ingest → Process   │
-                    │  → Enrich           │
+                    │  Databricks         │   [Workspace provisioned]
+                    │  Workspace          │   [Cluster not provisionable]
                     └──────────┬──────────┘
                                │
               ┌────────────────┼────────────────┐
@@ -125,33 +169,28 @@ A mid-sized retail company with operations in multiple regions needs to:
       ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
       │  Delta Lake  │  │  ML Models   │  │  Azure       │
       │  (ADLS Gen2) │  │  (MLflow)    │  │  OpenAI      │
-      │              │  │              │  │  + AI Foundry│
+      │  [Operational]│ │ [Not started]│  │  [Code only] │
       └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
              │                 │                 │
              └─────────────────┼─────────────────┘
                                │
                                ▼
                     ┌─────────────────────┐
-                    │  AKS Cluster        │
+                    │  AKS Cluster        │   [Phase 8]
                     │                     │
                     │  REST APIs          │
                     │  Dashboards         │
-                    │  Internal Tools     │
                     └──────────┬──────────┘
                                │
                                ▼
                     ┌─────────────────────┐
                     │   BUSINESS USERS    │
-                    │                     │
-                    │  Analysts           │
-                    │  Marketing          │
-                    │  Operations         │
                     └─────────────────────┘
 ```
 
 ---
 
-## Current Architecture (Phase 3)
+## Current Architecture (Phase 7)
 
 ```
                          AZURE SUBSCRIPTION
@@ -175,6 +214,7 @@ A mid-sized retail company with operations in multiple regions needs to:
         │            │    - processed   │
         │            │    - notebooks   │
         │            │    - checkpoints │
+        │            │    - summaries   │
         │            └──────────────────┘
         │
         ▼
@@ -190,9 +230,16 @@ A mid-sized retail company with operations in multiple regions needs to:
                     │  dev-sredatabricks    │
                     │  -nsg (7 rules)       │
                     └───────────────────────┘
+
+        Additional services (active):
+        - Key Vault (dev-sredatabricks-kv)
+        - Managed Identity (dev-sredatabricks-dbw-mi)
+        - Application Insights (dev-sredatabricks-ai)
+        - Log Analytics (dev-sredatabricks-law)
+        - Azure Monitor Workspace (dev-sredatabricks-amw)
 ```
 
-### Data Pipeline Architecture (Phase 3)
+### Data Pipeline Architecture (Phase 3 + Phase 7)
 
 ```
    ┌──────────────────────┐
@@ -217,10 +264,20 @@ A mid-sized retail company with operations in multiple regions needs to:
               │
               ▼
    ┌──────────────────────┐
+   │  AI summary          │
+   │  src/ai/             │
+   │  (client + fallback) │
+   └──────────┬───────────┘
+              │
+              ▼
+   ┌──────────────────────┐
    │  Delta Lake          │
    │  spark-warehouse/    │
    │    raw/              │
    │    processed/        │
+   │      - variations    │
+   │      - monthly_agg   │
+   │      - summaries     │
    └──────────────────────┘
 ```
 
@@ -312,6 +369,43 @@ A mid-sized retail company with operations in multiple regions needs to:
 - [x] Security model documented in `docs/architecture/security-model.md`
 - [x] ADR-003 documenting the security decisions
 
+### Phase 7 — AI Integration
+
+- [x] Executive summary use case selected from five candidates
+- [x] Terraform module for Azure OpenAI (`gpt-4o-mini`, GlobalStandard)
+- [x] Role assignment for Managed Identity on OpenAI (conditional)
+- [x] AI client abstraction (`python/src/ai/client.py`)
+- [x] Deterministic fallback generator (`python/src/ai/fallback.py`)
+- [x] Prompt templates kept separate (`python/src/ai/prompts.py`)
+- [x] Summary orchestration (`python/src/ai/summarizer.py`)
+- [x] Pipeline integration (Steps 5b and 6b)
+- [x] Delta persistence (`processed/summaries`)
+- [x] Centralized credential resolution (`utils/credentials.py`)
+- [x] ADR-004 documenting the strategy and activation procedure
+- [x] Documented limitation: Azure for Students cannot provision Azure OpenAI quota
+
+---
+
+## Planned Features
+
+The following phases have not been started:
+
+- [ ] AKS cluster and containerized workloads (Phase 8)
+- [ ] Disaster recovery strategy and runbooks (Phase 9)
+- [ ] Cost management and FinOps practices (Phase 10)
+
+### Improvements pending subscription upgrade
+
+If the subscription is upgraded to Pay-As-You-Go, the following become possible:
+
+- [ ] Execute Azure DevOps pipelines on Microsoft-hosted agents
+- [ ] Provision a Databricks cluster for pipeline execution
+- [ ] Provision and use Azure OpenAI for AI-generated summaries
+- [ ] Migrate Workbook and Alert Rules from manual creation to Terraform
+
+None of these require code changes. The infrastructure and pipeline code
+are ready to be activated.
+
 ---
 
 ## CI/CD
@@ -325,7 +419,7 @@ Both pipelines use reusable templates (under `azure-devops/templates/`) and path
 
 ### Authentication
 
-Authentication uses **Workload Identity Federation (OIDC)**. No secrets are stored in Azure DevOps. Tokens are issued per pipeline run and validated by Azure AD against a Federated Credential.
+Authentication uses **Workload Identity Federation (OIDC)**. No secrets are stored in Azure DevOps. Tokens are issued per pipeline run and validated by Microsoft Entra ID against a Federated Credential.
 
 ### Execution limitation
 
@@ -393,6 +487,7 @@ The project adopts a least-privilege posture with zero long-lived secrets for se
 | CI/CD (Azure DevOps) | Service Principal | Workload Identity Federation (OIDC) |
 | Databricks runtime | User-Assigned Managed Identity | Managed Identity |
 | Pipeline secrets | Key Vault | RBAC-authorized access |
+| AI invocation (when enabled) | Managed Identity / Azure CLI | Microsoft Entra ID |
 
 ### Least privilege in practice
 
@@ -401,6 +496,7 @@ The project adopts a least-privilege posture with zero long-lived secrets for se
 | Azure DevOps Service Principal | Contributor at the project Resource Group |
 | Databricks Managed Identity | Key Vault Secrets User on the Key Vault |
 | Databricks Managed Identity | Storage Blob Data Contributor on the Data Lake |
+| Databricks Managed Identity | Cognitive Services OpenAI User (conditional) |
 | Operator | Key Vault Administrator on the Key Vault |
 
 ### Key Vault
@@ -411,23 +507,90 @@ Secrets are centralized in Azure Key Vault `dev-sredatabricks-kv` with RBAC-base
 
 A legacy Service Principal with Contributor at the subscription scope was identified and removed, along with its client secret. This eliminated an orphaned credential that had caused a real security incident during local development.
 
+### Best practices maintained
+
+- Never commit the `.env` file
+- Never store secrets in Terraform files
+- Use Key Vault for all secrets
+- Use Managed Identity for service-to-service authentication
+- Apply least privilege to every role assignment
+- Maintain a restrictive NSG with documented exceptions
+- Use TLS 1.2 minimum and disable public blob access
+- Enable Hierarchical Namespace for ADLS Gen2
+- Use Secure Cluster Connectivity for Databricks
+
 The full security posture is documented in [docs/architecture/security-model.md](docs/architecture/security-model.md). The architectural decisions are captured in [ADR-003](docs/architecture/adr-003-security-model.md).
 
 See [Phase 6 — Security](docs/phases/phase-6-security.md) for the implementation record.
 
 ---
 
-## Planned Features
+## AI Integration
 
-- [ ] CI/CD with Azure DevOps (Phase 4)
-- [ ] Prometheus and Grafana observability stack (Phase 5)
-- [ ] SLIs and SLOs for critical services (Phase 5)
-- [ ] RBAC and Managed Identities (Phase 6)
-- [ ] Key Vault integration for secrets (Phase 6)
-- [ ] Azure OpenAI and AI Foundry integration (Phase 7)
-- [ ] AKS cluster and containerized workloads (Phase 8)
-- [ ] Disaster recovery strategy and runbooks (Phase 9)
-- [ ] Cost management and FinOps practices (Phase 10)
+The pipeline generates an executive summary of Brazilian economic indicators after each aggregation step. The summary is persisted in Delta (`processed/summaries`) with metadata about the model used.
+
+### Architecture
+
+```
+                Pipeline executes
+                       │
+                       ▼
+             ┌───────────────────┐
+             │  Monthly           │
+             │  aggregates ready  │
+             └─────────┬─────────┘
+                       │
+                       ▼
+             ┌───────────────────┐
+             │  AI client         │
+             │  (client.py)       │
+             └─────────┬─────────┘
+                       │
+              ┌────────┴────────┐
+              │                 │
+              ▼                 ▼
+       ┌────────────┐    ┌────────────┐
+       │ Azure      │    │ Fallback   │
+       │ OpenAI     │    │ generator  │
+       │ (if enabled)│   │ (default)  │
+       └─────┬──────┘    └─────┬──────┘
+             │                 │
+             └────────┬────────┘
+                      │
+                      ▼
+             ┌───────────────────┐
+             │  Delta table       │
+             │  processed/        │
+             │  summaries         │
+             └───────────────────┘
+```
+
+### Two modes
+
+| Mode | Trigger | Summary source |
+|------|---------|----------------|
+| Fallback | `AZURE_OPENAI_ENABLED=false` or unset | Deterministic generator |
+| Azure OpenAI | `AZURE_OPENAI_ENABLED=true` and endpoint set | Deployed `gpt-4o-mini` |
+
+The same pipeline code runs in both modes. Enabling Azure OpenAI requires only setting environment variables.
+
+### Security
+
+- **No API keys.** Authentication uses Microsoft Entra ID via `AzureCliCredential` locally and `DefaultAzureCredential` in Azure.
+- The Databricks Managed Identity is granted `Cognitive Services OpenAI User` on the OpenAI account (via the `security` module, when the module is active).
+- The connection is scoped to the specific OpenAI resource.
+
+### Known limitation
+
+Azure for Students subscriptions cannot provision Azure OpenAI due to quota restrictions. The Terraform module (`terraform/modules/ai/`) is preserved and validated but commented out in the environment wiring. The pipeline uses the deterministic fallback generator in the current environment.
+
+The fallback is a Python template, not a model. It produces structured summaries from the same data, with a `is_fallback` flag and a disclaimer in the output.
+
+See [ADR-004](docs/architecture/adr-004-ai-integration.md) for the full decision record, alternatives considered, and activation procedure.
+
+### Documentation
+
+See [Phase 7 — AI Integration](docs/phases/phase-7-ai.md) for the implementation record.
 
 ---
 
@@ -447,10 +610,14 @@ Before getting started, install:
 You also need:
 
 - An Azure subscription with sufficient permissions
-- The `Microsoft.Databricks` provider registered
+- The `Microsoft.Databricks` and `Microsoft.CognitiveServices` providers registered
 - A storage account for the Terraform remote backend
 
-**Known limitation:** Azure for Students subscriptions cannot provision Databricks clusters due to quota and SKU restrictions. See [ADR-001](docs/architecture/adr-001-databricks-cluster-limitation.md).
+**Known limitations (Azure for Students):**
+
+- Databricks clusters cannot be provisioned (SKU restrictions). See [ADR-001](docs/architecture/adr-001-databricks-cluster-limitation.md).
+- Azure OpenAI cannot be provisioned (quota restrictions). See [ADR-004](docs/architecture/adr-004-ai-integration.md).
+- Azure DevOps pipelines cannot run on hosted agents (billing restrictions). See [Phase 4](docs/phases/phase-4-cicd.md).
 
 ---
 
@@ -567,7 +734,8 @@ jc-azure-sre-databricks-platform/
 │   │   ├── databricks/       # Workspace with VNet Injection
 │   │   ├── monitoring/       # Application Insights, Log Analytics
 │   │   ├── keyvault/         # Key Vault and Managed Identity
-│   │   └── security/         # Role assignments
+│   │   ├── security/         # Role assignments
+│   │   └── ai/               # Azure OpenAI (preserved, not applied)
 │   └── environments/
 │       ├── dev/
 │       ├── staging/
@@ -577,10 +745,11 @@ jc-azure-sre-databricks-platform/
 │   ├── requirements.txt
 │   ├── pytest.ini
 │   ├── src/
+│   │   ├── ai/               # AI integration (client, fallback, prompts, summarizer)
 │   │   ├── api/              # BCB SGS client
 │   │   ├── pipeline/         # ingest, validate, transform, persist
-│   │   └── utils/            # logging, spark helpers
-│   └── tests/                # 10 unit and smoke tests
+│   │   └── utils/            # logging, spark helpers, credentials
+│   └── tests/                # unit and smoke tests
 │
 ├── databricks/
 │   ├── notebooks/
@@ -593,6 +762,7 @@ jc-azure-sre-databricks-platform/
 │
 ├── monitoring/
 │   └── slos.md              # SLIs, SLOs, error budget policy
+│
 ├── security/                 # RBAC and security-related Terraform (module)
 ├── kubernetes/
 ├── scripts/
@@ -608,13 +778,15 @@ jc-azure-sre-databricks-platform/
     │   ├── phase-3-pipeline.md
     │   ├── phase-4-cicd.md
     │   ├── phase-5-observability.md
-    │   └── phase-6-security.md
+    │   ├── phase-6-security.md
+    │   └── phase-7-ai.md
     ├── architecture/
     │   ├── README.md
     │   ├── security-model.md
     │   ├── adr-001-databricks-cluster-limitation.md
     │   ├── adr-002-observability-stack.md
-    │   └── adr-003-security-model.md
+    │   ├── adr-003-security-model.md
+    │   └── adr-004-ai-integration.md
     ├── operations/
     │   └── README.md
     └── troubleshooting/
@@ -634,6 +806,8 @@ jc-azure-sre-databricks-platform/
 | Subnet | `{env}-{project}-{type}-subnet` | `dev-sredatabricks-data-subnet` |
 | Storage Account | `{env}{project}{purpose}` | `devsredata` |
 | Databricks | `{env}-{project}-dbw` | `dev-sredatabricks-dbw` |
+| Key Vault | `{env}-{project}-kv` | `dev-sredatabricks-kv` |
+| Managed Identity | `{env}-{project}-{purpose}-mi` | `dev-sredatabricks-dbw-mi` |
 
 ### Tags
 
@@ -671,30 +845,14 @@ Detailed documentation is available under `docs/`:
 | [Phase 4 — CI/CD](docs/phases/phase-4-cicd.md) | Azure DevOps pipelines and templates |
 | [Phase 5 — Observability](docs/phases/phase-5-observability.md) | SLIs/SLOs, metrics, dashboards, alerts |
 | [Phase 6 — Security](docs/phases/phase-6-security.md) | Key Vault, RBAC, Managed Identities, cleanup |
+| [Phase 7 — AI Integration](docs/phases/phase-7-ai.md) | Executive summaries with fallback strategy |
 | [Security Model](docs/architecture/security-model.md) | Full security posture reference |
 | [ADR-001](docs/architecture/adr-001-databricks-cluster-limitation.md) | Databricks cluster limitation |
 | [ADR-002](docs/architecture/adr-002-observability-stack.md) | Observability stack selection |
 | [ADR-003](docs/architecture/adr-003-security-model.md) | Security model decisions |
+| [ADR-004](docs/architecture/adr-004-ai-integration.md) | AI integration strategy |
 | [Operations](docs/operations/README.md) | Runbooks and procedures |
 | [Troubleshooting](docs/troubleshooting/README.md) | Known issues and fixes |
-
----
-
-## Security
-
-The following practices are maintained throughout development:
-
-- Never commit the `.env` file
-- Never store secrets directly in Terraform files
-- Azure Key Vault for secrets management (planned for Phase 6)
-- Managed Identities for resource access (planned for Phase 6)
-- Principle of least privilege for Azure permissions
-- NSG with restrictive default and documented exceptions
-- TLS 1.2 minimum for storage accounts
-- Blob public access disabled
-- Hierarchical Namespace for ADLS Gen2
-- Secure Cluster Connectivity for Databricks
-- `NoAzureDatabricksRules` with pre-defined NSG rules
 
 ---
 
@@ -706,17 +864,18 @@ The project runs on a constrained budget. Controls in place:
 - Only necessary resources kept active
 - All resources can be destroyed with `make terraform-destroy`
 - Data pipeline runs locally, avoiding compute costs in the cloud
+- AI summaries use deterministic fallback (no token costs in current environment)
 - Azure Cost Management for monitoring (planned for Phase 10)
 
 ---
 
 ## Manual Resources
 
-Some observability resources were created manually in the Azure portal (Workbook, Action Group, Alert Rules). They are documented in the [Post-apply checklist](docs/operations/README.md) and must be recreated after each `terraform destroy` + `terraform apply` cycle.
+Some resources were created manually in the Azure portal (Workbook, Action Group, Alert Rules, the Application Insights secret in Key Vault). They are documented in the [Post-apply checklist](docs/operations/README.md) and must be recreated after each `terraform destroy` + `terraform apply` cycle.
 
 Migration to Terraform is planned for a later phase (see [ADR-002](docs/architecture/adr-002-observability-stack.md)).
 
---- 
+---
 
 ## Roadmap
 
@@ -729,8 +888,8 @@ Migration to Terraform is planned for a later phase (see [ADR-002](docs/architec
 | **Phase 4** | CI/CD with Azure DevOps | Completed |
 | **Phase 5** | Observability: SLIs/SLOs, Application Insights, alerts | Completed |
 | **Phase 6** | Security: Key Vault, RBAC, Managed Identities, cleanup | Completed |
-| **Phase 7** | AI Integration: Azure OpenAI, AI Foundry | Next |
-| **Phase 8** | AKS and containerized workloads | Planned |
+| **Phase 7** | AI Integration: executive summaries with fallback strategy | Completed |
+| **Phase 8** | AKS and containerized workloads | Next |
 | **Phase 9** | Disaster recovery and resilience | Planned |
 | **Phase 10** | Cost optimization and governance | Planned |
 

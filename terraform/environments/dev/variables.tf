@@ -85,3 +85,9 @@ variable "devops_principal_id" {
   type        = string
   default     = ""
 }
+
+variable "openai_location" {
+  description = "Azure region for the Azure OpenAI resource"
+  type        = string
+  default     = "eastus"
+}

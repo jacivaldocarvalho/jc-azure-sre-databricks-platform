@@ -24,7 +24,7 @@ Planned runbooks, to be added as the project progresses:
 
 | Runbook | Target Phase | Description |
 |---------|--------------|-------------|
-| `rotate-credentials.md` | Phase 6 (current) | Rotate Service Principal and Key Vault secrets |
+| `rotate-credentials.md` | Phase 6 | Rotate Service Principal and Key Vault secrets |
 | `backup-and-restore.md` | Phase 9 | Back up and restore critical data |
 | `incident-response.md` | Phase 5 | Response procedure for common incidents |
 | `cost-review.md` | Phase 10 | Monthly cost review procedure |
@@ -86,6 +86,39 @@ Removes Delta tables, Pytest cache, and Python bytecode.
 
 ---
 
+## AI Integration Modes
+
+The pipeline supports two modes for generating executive summaries, controlled by the `AZURE_OPENAI_ENABLED` environment variable.
+
+| Mode | Trigger | Summary source |
+|------|---------|----------------|
+| Fallback | `AZURE_OPENAI_ENABLED=false` or unset | Deterministic generator (`python/src/ai/fallback.py`) |
+| Azure OpenAI | `AZURE_OPENAI_ENABLED=true` and endpoint set | Deployed `gpt-4o-mini` model |
+
+### How to check the current mode
+
+Inspect the pipeline log for one of the following lines:
+
+```
+INFO | src.ai.summarizer | Azure OpenAI is not enabled. Using fallback generator.
+```
+
+or
+
+```
+INFO | src.ai.summarizer | Azure OpenAI is enabled. Invoking model.
+```
+
+The generated summary is persisted in the Delta table `spark-warehouse/processed/summaries` with a column `is_fallback` that distinguishes the two modes.
+
+### Why the fallback exists
+
+Azure for Students subscriptions cannot provision Azure OpenAI due to quota restrictions. See [ADR-004](../architecture/adr-004-ai-integration.md) for the full decision record.
+
+The fallback allows the pipeline to remain functional in the current environment while preserving the interface for when Azure OpenAI becomes available.
+
+---
+
 ## Post-Apply Checklist
 
 Some resources were created manually or are not fully managed by Terraform. They must be recreated or verified after each `terraform destroy` + `terraform apply` cycle.
@@ -93,6 +126,8 @@ Some resources were created manually or are not fully managed by Terraform. They
 ### Why manual
 
 For speed of iteration and KQL query tuning, the Workbook and alert rules were created in the portal first. The migration to Terraform is planned for a future phase. Additionally, the Azure DevOps Service Principal scope change was applied manually since the SP was created outside of Terraform.
+
+The AI integration does not require manual recreation: the Terraform module is preserved but commented out in the environment wiring (see [ADR-004](../architecture/adr-004-ai-integration.md)).
 
 ### Resources to recreate or verify
 
@@ -221,6 +256,22 @@ az role assignment list \
 
 **Expected:** two assignments (Key Vault Administrator for the user, Key Vault Secrets User for the Managed Identity).
 
+#### 7. Verify AI Integration Configuration
+
+The AI integration does not require manual recreation (the Terraform module is preserved but commented out). However, after a fresh apply, verify the `.env` reflects the intended mode:
+
+```bash
+grep "AZURE_OPENAI" .env
+```
+
+**Expected in the current environment:**
+
+```
+AZURE_OPENAI_ENABLED=false
+```
+
+If Azure OpenAI becomes available in the future, update the `.env` and uncomment the module in the Terraform configuration. The full procedure is documented in [ADR-004](../architecture/adr-004-ai-integration.md).
+
 ---
 
 ## Security Auditing
@@ -344,6 +395,63 @@ az account set --subscription <SUBSCRIPTION_ID>
 
 The session is used by both Terraform and the Python pipeline in local development.
 
+#### Enabling Azure OpenAI (when quota becomes available)
+
+When the subscription is upgraded to a plan that supports Azure OpenAI, follow these steps:
+
+**Step 1: Enable the Terraform module**
+
+In `terraform/environments/dev/main.tf`, uncomment:
+
+```hcl
+module "ai" {
+  source = "../../modules/ai"
+
+  resource_group_name = azurerm_resource_group.main.name
+  environment         = var.environment
+  project_name        = var.project_name
+  openai_location     = var.openai_location
+  tags                = var.tags
+}
+```
+
+Also uncomment the AI outputs (`openai_endpoint`, `openai_account_name`, `openai_deployment_name`, `openai_location`).
+
+**Step 2: Pass the account ID to the security module**
+
+In the same file, change the security module:
+
+```hcl
+openai_account_id = module.ai.account_id
+```
+
+**Step 3: Apply the infrastructure**
+
+```bash
+make terraform-init
+make terraform-plan
+make terraform-apply
+```
+
+**Step 4: Update the local `.env`**
+
+```bash
+AZURE_OPENAI_ENABLED=true
+AZURE_OPENAI_ENDPOINT=<endpoint from terraform output>
+AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
+```
+
+**Step 5: Run the pipeline**
+
+```bash
+cd python
+python -m src.run_pipeline --start 2024-01-01 --end 2025-12-31
+```
+
+The log should show `Azure OpenAI is enabled. Invoking model.`, and the `summaries` Delta table should have `is_fallback=false`.
+
+**Note:** when the AI module is enabled, the `security` module assigns the `Cognitive Services OpenAI User` role to the pipeline Managed Identity. No additional manual permission changes are required.
+
 #### Revoking the Azure DevOps Federated Credential
 
 If the Service Connection is compromised or needs recreation:
@@ -370,6 +478,7 @@ Recreate it with the exact issuer and subject that Azure DevOps generates (see `
 - Check the subscription credit balance
 - Review the `Pipeline Overview` workbook for anomalies
 - Confirm no alerts are firing
+- Verify the AI summary mode: check the last pipeline log for the `Azure OpenAI is not enabled` or `Azure OpenAI is enabled` line
 
 ### Before Each Session
 
@@ -401,5 +510,6 @@ This is a solo portfolio project. There is no on-call rotation. The escalation p
 - [Phases](../phases/) — what was implemented
 - [Architecture](../architecture/) — architectural decisions
 - [Security Model](../architecture/security-model.md) — full security posture
+- [AI Integration Strategy](../architecture/adr-004-ai-integration.md) — AI decisions and activation procedure
 - [Troubleshooting](../troubleshooting/) — problem resolution guides
 - [Conventions](../conventions.md) — project standards

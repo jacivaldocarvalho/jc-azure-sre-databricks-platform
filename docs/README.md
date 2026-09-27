@@ -23,6 +23,7 @@ Central documentation for the JC-Azure SRE Databricks Platform project.
 - [Phase 4 — CI/CD with Azure DevOps](phases/phase-4-cicd.md)
 - [Phase 5 — Observability](phases/phase-5-observability.md)
 - [Phase 6 — Security](phases/phase-6-security.md)
+- [Phase 7 — AI Integration](phases/phase-7-ai.md)
 
 ### Architecture
 
@@ -33,6 +34,7 @@ Central documentation for the JC-Azure SRE Databricks Platform project.
 - [ADR-001 — Databricks Cluster Limitation in Azure for Students](architecture/adr-001-databricks-cluster-limitation.md)
 - [ADR-002 — Observability Stack Selection](architecture/adr-002-observability-stack.md)
 - [ADR-003 — Security Model Decisions](architecture/adr-003-security-model.md)
+- [ADR-004 — AI Integration Strategy](architecture/adr-004-ai-integration.md)
 
 ### Operations and Troubleshooting
 

@@ -21,6 +21,9 @@ The format follows the lightweight ADR (Architecture Decision Record) pattern po
 | ID | Title | Status | Date |
 |----|-------|--------|------|
 | [ADR-001](adr-001-databricks-cluster-limitation.md) | Databricks Cluster Limitation in Azure for Students | Accepted | 2026-09-18 |
+| [ADR-002](adr-002-observability-stack.md) | Observability Stack Selection | Accepted | 2026-09-24 |
+| [ADR-003](adr-003-security-model.md) | Security Model Decisions | Accepted | 2026-09-26 |
+| [ADR-004](adr-004-ai-integration.md) | AI Integration Strategy | Accepted (with documented limitation) | 2026-09-27 |
 
 ### Planned ADRs
 
@@ -28,15 +31,26 @@ The following ADRs will be created as the project progresses through the remaini
 
 | ID | Title | Target Phase |
 |----|-------|--------------|
-| ADR-002 | Network topology: single VNet with private endpoints | Phase 1 (retroactive) |
-| ADR-003 | Selection of Azure for Students and its implications | Phase 0 (retroactive) |
-| ADR-004 | Adoption of Secure Cluster Connectivity | Phase 2 |
-| ADR-005 | Local-first data pipeline strategy | Phase 3 |
-| ADR-006 | CI/CD approach with Azure DevOps | Phase 4 |
-| ADR-007 | Observability stack selection (Prometheus and Grafana) | Phase 5 |
-| ADR-008 | RBAC and Managed Identity strategy | Phase 6 |
+| ADR-005 | AKS cluster configuration and workload deployment | Phase 8 |
+| ADR-006 | Disaster recovery strategy | Phase 9 |
+| ADR-007 | Cost optimization and governance | Phase 10 |
 
-The retroactive ADRs (002, 003) will be added for completeness so that the documentation reflects all major architectural choices made during the project.
+The following retroactive ADRs may be added for completeness:
+
+| ID | Title | Reference Phase |
+|----|-------|-----------------|
+| ADR-008 | Network topology: single VNet with private endpoints | Phase 1 |
+| ADR-009 | Selection of Azure for Students and its implications | Phase 0 |
+
+---
+
+## Reference Documents
+
+Beyond the ADRs, this directory also contains reference documents that describe the current state of the architecture without proposing decisions:
+
+| Document | Purpose |
+|----------|---------|
+| [Security Model](security-model.md) | Asset inventory, threat model, identities, role assignments, authentication flows |
 
 ---
 
@@ -59,10 +73,11 @@ When multiple solutions exist, the simpler one is preferred unless the more comp
 - TLS 1.2 minimum
 - Secure Cluster Connectivity for Databricks
 - NSG with restrictive default posture and documented exceptions
+- No long-lived secrets for service-to-service authentication
 
 ### 4. Testability and Portability
 
-Business logic lives in libraries, not in notebooks. This makes the code testable locally, portable to Databricks, and independent of the execution environment.
+Business logic lives in libraries, not in notebooks or scripts. This makes the code testable locally, portable to Databricks, and independent of the execution environment.
 
 ### 5. Observability from the Start
 
@@ -74,7 +89,11 @@ The project runs on a constrained budget. Decisions must consider the cost impli
 
 ### 7. Document Decisions When They Happen
 
-Architectural decisions are recorded while the context is fresh. This is why the ADR for the Databricks limitation exists in Phase 3 rather than being deferred.
+Architectural decisions are recorded while the context is fresh. This is why ADR-001 (Databricks limitation) was written in Phase 3, and ADR-004 (AI strategy) was written immediately after the quota limitation was discovered in Phase 7.
+
+### 8. Honest Documentation of Limitations
+
+When a decision is constrained by the platform or the environment, the constraint is documented explicitly and the alternatives are recorded. This is why ADR-001, ADR-002, and ADR-004 all include a "Consequences" section that names both what is gained and what is lost.
 
 ---
 
@@ -82,9 +101,12 @@ Architectural decisions are recorded while the context is fresh. This is why the
 
 ```
 docs/architecture/
-├── README.md                                    # This file
-├── adr-001-databricks-cluster-limitation.md     # Phase 3 decision
-└── (future ADRs will be added here)
+├── README.md                                  # This file
+├── security-model.md                          # Reference document
+├── adr-001-databricks-cluster-limitation.md
+├── adr-002-observability-stack.md
+├── adr-003-security-model.md
+└── adr-004-ai-integration.md
 ```
 
 ---
