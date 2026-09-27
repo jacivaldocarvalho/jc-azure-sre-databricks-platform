@@ -38,3 +38,6 @@ azure-identity==1.18.0
 # Azure Key Vault integration
 azure-keyvault-secrets==4.9.0
 azure-identity==1.18.0
+
+# AI integration
+openai==1.54.0

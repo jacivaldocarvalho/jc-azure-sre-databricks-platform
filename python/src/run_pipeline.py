@@ -15,9 +15,13 @@ from datetime import date, datetime
 
 from dotenv import load_dotenv
 
-# Load environment variables from .env before any module reads them
+# Environment variables must be loaded before importing application modules,
+# because some modules read configuration during import.
 load_dotenv()
 
+from pyspark.sql import functions as F  # noqa: E402
+
+from src.ai.summarizer import generate_summary  # noqa: E402
 from src.pipeline.ingest import ingest_all_series  # noqa: E402
 from src.pipeline.persist import write_processed, write_raw  # noqa: E402
 from src.pipeline.transform import (  # noqa: E402
@@ -35,6 +39,7 @@ from src.utils.metrics import (  # noqa: E402
 )
 from src.utils.pipeline_metrics import initialize as initialize_metrics  # noqa: E402
 from src.utils.spark import get_spark_session  # noqa: E402
+
 
 logger = get_logger(__name__)
 
@@ -99,6 +104,28 @@ def main() -> None:
         with track_duration(metrics.duration_seconds, {"stage": "aggregate"}):
             monthly = aggregate_monthly(validated_df)
 
+        # 5b. Generate executive summary
+        logger.info("=== Step 5b: Generate executive summary ===")
+        with track_duration(metrics.duration_seconds, {"stage": "summarize"}):
+            monthly_rows = [
+                row.asDict()
+                for row in monthly.collect()
+            ]
+            summary_response = generate_summary(
+                monthly_data=monthly_rows,
+                series_list=["selic", "cdi", "ipca"],
+                start_date=start,
+                end_date=end,
+            )
+            logger.info(
+                "Summary generated: model=%s, fallback=%s, "
+                "input_tokens=%d, output_tokens=%d",
+                summary_response.model,
+                summary_response.is_fallback,
+                summary_response.input_tokens,
+                summary_response.output_tokens,
+            )
+
         # 6. Persist processed
         logger.info("=== Step 6: Persist processed ===")
         with track_duration(metrics.duration_seconds, {"stage": "persist_processed"}):
@@ -110,6 +137,33 @@ def main() -> None:
         # Emit success metrics
         metrics.last_success_timestamp.add(int(time.time()), attributes={})
         metrics.runs_total.add(1, attributes={"status": "success"})
+
+        # 6b. Persist summary
+        logger.info("=== Step 6b: Persist summary ===")
+        summary_df = spark.createDataFrame(
+            [
+                (
+                    summary_response.text,
+                    summary_response.model,
+                    summary_response.is_fallback,
+                    summary_response.input_tokens,
+                    summary_response.output_tokens,
+                    start.isoformat(),
+                    end.isoformat(),
+                )
+            ],
+            schema="""
+                text string,
+                model string,
+                is_fallback boolean,
+                input_tokens long,
+                output_tokens long,
+                period_start string,
+                period_end string
+            """,
+        ).withColumn("generated_at", F.current_timestamp())
+
+        write_processed(summary_df, "summaries")
 
     except Exception:
         run_status = "failure"
