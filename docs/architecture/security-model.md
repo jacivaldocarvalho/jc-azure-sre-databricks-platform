@@ -35,11 +35,14 @@ The document is updated whenever a new identity, secret, or access pattern is in
 | Application Insights connection string | Azure Key Vault | On Application Insights recreation |
 | Azure DevOps client credentials | Not stored (OIDC) | N/A |
 | Azure CLI session tokens | Azure CLI cache (local) | Per `az login` |
+| Azure OpenAI access | Not stored (Managed Identity / Azure CLI) | N/A |
+
+**Note:** the project does not store any API keys, including for AI services. Authentication to Azure OpenAI is done via Microsoft Entra ID (Managed Identity in Azure, Azure CLI locally). See [ADR-004](adr-004-ai-integration.md).
 
 ### Compute
 
 | Resource | Purpose | Access |
-|----------|---------|--------|
+|--------|---------|--------|
 | Databricks Workspace | Data processing and notebooks | VNet Injection, SCC |
 | Local developer machine | Pipeline execution | Azure CLI session |
 | Azure DevOps hosted agents | CI/CD (future) | OIDC + Service Connection |
@@ -69,6 +72,8 @@ A simplified threat model focused on realistic risks for this project.
 | Orphaned credentials | Medium | High | Removed in Phase 6; periodic audits |
 | Unauthorized access to ADLS | Low | High | Managed Identity, RBAC, private network |
 | Denial of service via resource abuse | Low | Medium | Cost alerts (planned), least privilege |
+| Prompt injection in AI summary | Low | Low | Input is structured data from BCB; no user-supplied prompts |
+| Abuse of Azure OpenAI quota | Low | Medium | Scoped identity, low TPM deployment, cost monitoring |
 
 ### Out of Scope
 
@@ -91,8 +96,10 @@ A simplified threat model focused on realistic risks for this project.
 | Identity | Type | Purpose | Roles |
 |----------|------|---------|-------|
 | `jc-sre-databricks-pipeline` | App Registration (Service Principal) | Azure DevOps pipelines | Contributor (at Resource Group scope) |
-| `dev-sredatabricks-dbw-mi` | User-Assigned Managed Identity | Databricks workspace | Key Vault Secrets User, Storage Blob Data Contributor |
+| `dev-sredatabricks-dbw-mi` | User-Assigned Managed Identity | Databricks workspace and pipeline | Key Vault Secrets User, Storage Blob Data Contributor, Cognitive Services OpenAI User (conditional) |
 | Azure DevOps OIDC | Federated Credential | Pipeline authentication | Federated to `jc-sre-databricks-pipeline` |
+
+**Note:** the `Cognitive Services OpenAI User` role is conditional on the Azure OpenAI resource being provisioned. In the current environment (Azure for Students), the AI module is commented out and the role is not assigned. See [ADR-004](adr-004-ai-integration.md).
 
 ### Removed Identities
 
@@ -164,6 +171,25 @@ A simplified threat model focused on realistic risks for this project.
 │  Role: Key Vault Secrets User                           │
 │  Principal: dev-sredatabricks-dbw-mi                    │
 │  Purpose: Read secrets from Databricks                  │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Azure OpenAI (conditional)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Azure OpenAI: dev-sredatabricks-openai                 │
+│  ─────────────────────────────────────────────────────  │
+│                                                         │
+│  Status: Not provisioned in the current environment     │
+│  Reason: Azure for Students quota restriction           │
+│                                                         │
+│  Role (when provisioned): Cognitive Services OpenAI User│
+│  Principal: dev-sredatabricks-dbw-mi                    │
+│  Purpose: Invoke the deployed gpt-4o-mini model         │
+│                                                         │
+│  See ADR-004 for the full decision record.              │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -291,6 +317,38 @@ A simplified threat model focused on realistic risks for this project.
 
 **Characteristic:** explicit priority order; no fallback ambiguity.
 
+### Flow 5: AI invocation
+
+```
+   Pipeline reaches Step 5b
+        │
+        ▼
+   ┌─────────────────────────────────┐
+   │  AZURE_OPENAI_ENABLED=true?     │
+   └─────────────┬───────────────────┘
+                 │
+          Yes ───┴─── No
+           │           │
+           ▼           ▼
+   ┌────────────┐ ┌──────────────┐
+   │  Azure     │ │  Fallback    │
+   │  OpenAI    │ │  generator   │
+   │  via       │ │  (template)  │
+   │  Entra ID  │ │              │
+   └─────┬──────┘ └──────┬───────┘
+         │               │
+         └───────┬───────┘
+                 │
+                 ▼
+   ┌─────────────────────────────┐
+   │  Persist summary to Delta   │
+   │  processed/summaries        │
+   │  (is_fallback column)       │
+   └─────────────────────────────┘
+```
+
+**Characteristic:** the pipeline always produces a summary. The source (model or fallback) is transparent to downstream consumers, but is explicitly recorded in the `is_fallback` column.
+
 ---
 
 ## 6. Least Privilege by Design
@@ -304,12 +362,14 @@ The following principles are applied consistently:
 | Azure DevOps SP | Manage resources in the project RG | Resource Group |
 | Databricks MI | Read/write to ADLS containers | Storage Account |
 | Databricks MI | Read Application Insights secret | Key Vault |
+| Databricks MI | Invoke Azure OpenAI models | OpenAI account (conditional) |
 
 ### 2. No shared secrets
 
 - Storage access is via Managed Identity, not account keys
 - CI/CD is via OIDC, not client secrets
 - Local development is via Azure CLI, not stored credentials
+- AI invocation uses Microsoft Entra ID, not API keys
 
 ### 3. No secrets in code or config files
 
@@ -386,13 +446,16 @@ The project is not subject to formal compliance frameworks. However, the practic
 | No Key Vault diagnostic logs | Secret access not audited | Enable in Phase 10 |
 | No conditional access policies | No location or device restrictions | Out of scope for student subscription |
 | No Defender for Cloud | No continuous security recommendations | Enable in Phase 10 |
+| Azure OpenAI not provisioned | AI summaries use deterministic fallback | Requires Pay-As-You-Go subscription (see [ADR-004](adr-004-ai-integration.md)) |
 
 ---
 
 ## 11. Related Documents
 
-- [Phase 6 — Security](../phases/phase-6-security.md) — full implementation record
-- [ADR-003 — Security Model Decisions](adr-003-security-model.md) — architectural decisions
+- [Phase 6 — Security](../phases/phase-6-security.md) — full implementation record for security
+- [Phase 7 — AI Integration](../phases/phase-7-ai.md) — full implementation record for AI
+- [ADR-003 — Security Model Decisions](adr-003-security-model.md) — security architectural decisions
+- [ADR-004 — AI Integration Strategy](adr-004-ai-integration.md) — AI decisions and activation procedure
 - [Operations](../operations/README.md) — day-to-day procedures and post-apply checklist
 - [Troubleshooting](../troubleshooting/README.md) — common issues and fixes
 
@@ -403,3 +466,4 @@ The project is not subject to formal compliance frameworks. However, the practic
 | Date | Change |
 |------|--------|
 | 2026-09-26 | Initial security model documented after Phase 6 |
+| 2026-09-27 | Added AI-related entries (OpenAI role assignment, threat model, authentication flow) |
