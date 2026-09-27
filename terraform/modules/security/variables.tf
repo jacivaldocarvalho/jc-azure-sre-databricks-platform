@@ -18,3 +18,9 @@ variable "devops_principal_id" {
   type        = string
   default     = ""
 }
+
+variable "openai_account_id" {
+  description = "ID of the Azure OpenAI account. Empty to skip the assignment."
+  type        = string
+  default     = ""
+}

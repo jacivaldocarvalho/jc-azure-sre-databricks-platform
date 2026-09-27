@@ -71,15 +71,36 @@ module "keyvault" {
   tags                = var.tags
 }
 
-# Security Module
 module "security" {
   source = "../../modules/security"
 
-  resource_group_id                       = azurerm_resource_group.main.id
-  data_lake_storage_account_id            = module.datalake.storage_account_id
+  resource_group_id                        = azurerm_resource_group.main.id
+  data_lake_storage_account_id             = module.datalake.storage_account_id
   databricks_managed_identity_principal_id = module.keyvault.databricks_managed_identity_principal_id
-  devops_principal_id                     = var.devops_principal_id
+  
+  devops_principal_id                      = var.devops_principal_id
+  
+  # Azure OpenAI is not provisionable on Azure for Students subscriptions.
+  # Set to "" to disable the role assignment. When OpenAI becomes available,
+  # change this to: module.ai.account_id
+  openai_account_id = ""
 }
+
+# AI Module
+#
+# NOTE: Azure OpenAI cannot be provisioned on Azure for Students subscriptions
+# due to quota restrictions. The module is kept in the codebase for
+# future use. See docs/architecture/adr-004-ai-integration.md.
+#
+# module "ai" {
+#   source = "../../modules/ai"
+#
+#   resource_group_name = azurerm_resource_group.main.name
+#   environment         = var.environment
+#   project_name        = var.project_name
+#   openai_location     = var.openai_location
+#   tags                = var.tags
+# }
 
 # Outputs
 output "resource_group_name" {
@@ -154,3 +175,23 @@ output "databricks_storage_role_id" {
 output "devops_contributor_role_id" {
   value = module.security.devops_contributor_role_id
 }
+
+# output "openai_endpoint" {
+#   value = module.ai.endpoint
+# }
+#
+# output "openai_account_name" {
+#   value = module.ai.account_name
+# }
+#
+# output "openai_deployment_name" {
+#   value = module.ai.deployment_name
+# }
+#
+# output "openai_location" {
+#   value = module.ai.location
+# }
+#
+# output "databricks_openai_role_id" {
+#   value = module.security.databricks_openai_role_id
+# }

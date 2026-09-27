@@ -7,3 +7,8 @@ output "devops_contributor_role_id" {
   description = "ID of the Contributor assignment for Azure DevOps at the Resource Group"
   value       = length(azurerm_role_assignment.devops_contributor_rg) > 0 ? azurerm_role_assignment.devops_contributor_rg[0].id : null
 }
+
+output "databricks_openai_role_id" {
+  description = "ID of the Cognitive Services OpenAI User assignment for Databricks"
+  value       = length(azurerm_role_assignment.databricks_openai_user) > 0 ? azurerm_role_assignment.databricks_openai_user[0].id : null
+}
