@@ -91,3 +91,15 @@ variable "openai_location" {
   type        = string
   default     = "eastus"
 }
+
+variable "kubernetes_version" {
+  description = "Kubernetes version for the AKS cluster"
+  type        = string
+  default     = "1.30.0"
+}
+
+variable "node_vm_size" {
+  description = "VM size for the AKS nodes"
+  type        = string
+  default     = "Standard_B2s"
+}
