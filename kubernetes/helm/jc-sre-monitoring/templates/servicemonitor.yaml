@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: jc-sre-api
+  namespace: jc-sre
+  labels:
+    app.kubernetes.io/name: jc-sre-api
+    # This label is required by the kube-prometheus-stack sub-chart
+    # to auto-discover the ServiceMonitor.
+    release: jc-sre-monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jc-sre-api
+  namespaceSelector:
+    matchNames:
+      - jc-sre
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s

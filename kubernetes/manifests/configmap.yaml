@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jc-sre-api-config
+  namespace: jc-sre
+  labels:
+    app.kubernetes.io/name: jc-sre-databricks-api
+data:
+  DELTA_WAREHOUSE_PATH: "/data/spark-warehouse"
+  API_HOST: "0.0.0.0"
+  API_PORT: "8080"
+  API_LOG_LEVEL: "info"
+  ENVIRONMENT: "local"

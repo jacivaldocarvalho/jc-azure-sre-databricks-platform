@@ -27,7 +27,17 @@ help:
 	@echo "  make pipeline-query      - Query the monthly aggregates Delta table"
 	@echo "  make pipeline-clean      - Remove local Delta tables and caches"
 	@echo ""
-
+	@echo ""
+	@echo "Kind (local Kubernetes):"
+	@echo "  make kind-up            - Create Kind cluster with NGINX Ingress"
+	@echo "  make kind-down          - Delete Kind cluster"
+	@echo "  make kind-build         - Build and load the API image"
+	@echo "  make kind-deploy        - Deploy the API via Helm"
+	@echo "  make kind-status        - Show cluster, pods, and ingress status"
+	@echo "  make kind-logs          - Tail API logs"
+	@echo "  make kind-all           - Full setup: cluster + build + deploy"
+	@echo "  make kind-monitoring        - Install Prometheus + Grafana"
+	@echo "  make kind-monitoring-port-forward - Forward Grafana and Prometheus ports"
 # =============================================================================
 # Project targets
 # =============================================================================
@@ -120,3 +130,53 @@ pipeline-clean:
 	@rm -rf python/.pytest_cache 2>/dev/null || true
 	@find python -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@echo "Pipeline artifacts cleaned."
+
+# =============================================================================
+# Kind targets
+# =============================================================================
+
+kind-up:
+	@echo "Setting up Kind cluster..."
+	@./scripts/kind-setup.sh
+
+kind-down:
+	@echo "Tearing down Kind cluster..."
+	@./scripts/kind-teardown.sh
+
+kind-build:
+	@echo "Building and loading the API image..."
+	@./scripts/kind-build-and-load.sh
+
+kind-deploy:
+	@echo "Deploying the API to Kind..."
+	@./scripts/kind-deploy.sh
+
+kind-status:
+	@echo "Cluster status:"
+	@kubectl get nodes
+	@echo ""
+	@echo "Pods:"
+	@kubectl get pods -n jc-sre
+	@echo ""
+	@echo "Ingress:"
+	@kubectl get ingress -n jc-sre
+
+kind-logs:
+	@kubectl logs -n jc-sre -l app.kubernetes.io/name=jc-sre-api --tail=100 -f
+
+kind-all: kind-up kind-build kind-deploy
+	@echo ""
+	@echo "Full deployment complete."
+	@echo "Test with: curl http://jc-sre.local/health"
+
+kind-monitoring:
+	@echo "Installing monitoring stack..."
+	@./scripts/kind-monitoring-up.sh
+
+kind-monitoring-port-forward:
+	@echo "Starting port-forwards..."
+	@echo "Grafana will be available at http://localhost:3000 (admin/prom-operator)"
+	@echo "Prometheus will be available at http://localhost:9090"
+	@echo "Press Ctrl+C to stop."
+	@kubectl port-forward -n jc-sre svc/jc-sre-monitoring-grafana 3000:80 & \
+	 kubectl port-forward -n jc-sre svc/jc-sre-monitoring-kube-prometheus-prometheus 9090:9090
