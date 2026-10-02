@@ -1,0 +1,87 @@
+# Values for the jc-sre-monitoring chart.
+#
+# Most of the configuration is passed to the kube-prometheus-stack
+# sub-chart. The overrides below reduce resource usage to fit a Kind
+# cluster running on a laptop.
+
+kube-prometheus-stack:
+  # Global settings
+  fullnameOverride: jc-sre-monitoring
+
+  # Prometheus
+  prometheus:
+    prometheusSpec:
+      retention: 6h
+      resources:
+        requests:
+          cpu: 100m
+          memory: 512Mi
+        limits:
+          cpu: 500m
+          memory: 1Gi
+      storageSpec:
+        emptyDir: {}
+      # Scrape all ServiceMonitors regardless of release label
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: false
+
+  # Grafana
+  grafana:
+    enabled: true
+    adminPassword: "prom-operator"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    # Dashboard sidecar: automatically loads dashboards from ConfigMaps
+    sidecar:
+      dashboards:
+        enabled: true
+        label: grafana_dashboard
+        searchNamespace: ALL
+    service:
+      type: ClusterIP
+      port: 80
+
+  # Alertmanager
+  alertmanager:
+    enabled: true
+    alertmanagerSpec:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+
+  # Node exporter
+  nodeExporter:
+    enabled: true
+
+  # Kube state metrics
+  kubeStateMetrics:
+    enabled: true
+
+  # Prometheus operator
+  prometheusOperator:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+  # Disable components not needed for this demo
+  kubeEtcd:
+    enabled: false
+  kubeControllerManager:
+    enabled: false
+  kubeScheduler:
+    enabled: false
+  kubeProxy:
+    enabled: false

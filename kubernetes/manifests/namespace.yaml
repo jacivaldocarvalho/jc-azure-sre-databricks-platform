@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jc-sre
+  labels:
+    app.kubernetes.io/name: jc-sre-databricks-api
+    app.kubernetes.io/part-of: jc-azure-sre-databricks-platform

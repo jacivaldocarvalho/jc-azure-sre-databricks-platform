@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jc-sre-api-dashboard
+  namespace: jc-sre
+  labels:
+    grafana_dashboard: "1"
+data:
+  jc-sre-api-dashboard.json: |-
+    {{ .Files.Get "dashboards/api-overview.json" | nindent 4 }}

@@ -1,0 +1,13 @@
+apiVersion: v2
+name: jc-sre-api
+description: Helm chart for the JC SRE Databricks API
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - fastapi
+  - kubernetes
+  - sre
+  - databricks
+maintainers:
+  - name: Jacivaldo Carvalho

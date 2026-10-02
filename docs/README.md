@@ -24,6 +24,7 @@ Central documentation for the JC-Azure SRE Databricks Platform project.
 - [Phase 5 — Observability](phases/phase-5-observability.md)
 - [Phase 6 — Security](phases/phase-6-security.md)
 - [Phase 7 — AI Integration](phases/phase-7-ai.md)
+- [Phase 8 — AKS and Containerized Workloads](phases/phase-8-aks.md)
 
 ### Architecture
 
@@ -35,10 +36,11 @@ Central documentation for the JC-Azure SRE Databricks Platform project.
 - [ADR-002 — Observability Stack Selection](architecture/adr-002-observability-stack.md)
 - [ADR-003 — Security Model Decisions](architecture/adr-003-security-model.md)
 - [ADR-004 — AI Integration Strategy](architecture/adr-004-ai-integration.md)
+- [ADR-005 — AKS Local-First Strategy](architecture/adr-005-aks-local-first.md)
 
 ### Operations and Troubleshooting
 
-- [Operations](operations/README.md) — runbooks and post-apply checklist
+- [Operations](operations/README.md) — runbooks, Kind setup, and post-apply checklist
 - [Troubleshooting](troubleshooting/README.md) — common issues and fixes
 - [Conventions](conventions.md) — project standards
 

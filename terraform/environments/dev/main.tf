@@ -71,6 +71,41 @@ module "keyvault" {
   tags                = var.tags
 }
 
+# AKS Module
+#
+# NOTE: The AKS cluster is not provisioned in the current environment.
+# Azure for Students subscriptions have a limited credit balance, and the
+# AKS Load Balancer alone costs ~$18/month even with zero nodes.
+#
+# The module is preserved in the codebase and validated. To activate:
+#   1. Uncomment this block
+#   2. Uncomment the AKS outputs below
+#   3. Run terraform apply
+#
+# For local Kubernetes demonstration, use the Kind-based setup documented in
+# docs/phases/phase-8-aks.md.
+#
+# See ADR-005 for the full decision record.
+#
+# module "aks" {
+#   source = "../../modules/aks"
+#
+#   resource_group_name = azurerm_resource_group.main.name
+#   location            = var.location
+#   environment         = var.environment
+#   project_name        = var.project_name
+#   subnet_id           = module.networking.subnet_ids["aks"]
+#   kubernetes_version  = var.kubernetes_version
+#   node_vm_size        = var.node_vm_size
+#   node_min_count      = 0
+#   node_max_count      = 2
+#   workload_node_min_count = 0
+#   workload_node_max_count = 3
+#   acr_id              = module.acr.registry_id
+#   key_vault_id        = module.keyvault.key_vault_id
+#   tags                = var.tags
+# }
+
 module "security" {
   source = "../../modules/security"
 
@@ -194,4 +229,12 @@ output "devops_contributor_role_id" {
 #
 # output "databricks_openai_role_id" {
 #   value = module.security.databricks_openai_role_id
+# }
+
+# output "aks_cluster_name" {
+#   value = module.aks.cluster_name
+# }
+#
+# output "aks_cluster_fqdn" {
+#   value = module.aks.cluster_fqdn
 # }
