@@ -1,20 +1,20 @@
 # JC-Azure SRE/Databricks Platform
 
-Azure-Native SRE & Platform Engineering with Databricks and AI Integration
+Azure-Native SRE & Platform Engineering with Databricks, Kubernetes, and AI Integration
 
 [![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5-7B42BC)](https://terraform.io)
 [![Azure](https://img.shields.io/badge/Azure-Cloud-0078D4)](https://azure.microsoft.com)
 [![Databricks](https://img.shields.io/badge/Databricks-Premium-FF3621)](https://databricks.com)
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB)](https://python.org)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-AKS-326CE5)](https://kubernetes.io)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Kind-326CE5)](https://kind.sigs.k8s.io)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Phase](https://img.shields.io/badge/Phase-7-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
+[![Phase](https://img.shields.io/badge/Phase-8-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
 
 ---
 
 ## Project Status
 
-**Phase 7 — AI Integration completed (with documented limitation).**
+**Phase 8 — AKS and Containerized Workloads completed (with documented limitation).**
 
 | Phase | Description | Status |
 |-------|-------------|--------|
@@ -26,7 +26,8 @@ Azure-Native SRE & Platform Engineering with Databricks and AI Integration
 | **Phase 5** | Observability: SLIs/SLOs, Application Insights, alerts | Completed |
 | **Phase 6** | Security: Key Vault, RBAC, Managed Identities, cleanup | Completed |
 | **Phase 7** | AI Integration: executive summaries with fallback strategy | Completed |
-| **Phase 8** | AKS and containerized workloads | Next |
+| **Phase 8** | Kubernetes: API on Kind, Prometheus, Grafana (AKS module preserved) | Completed |
+| **Phase 9** | Disaster recovery and resilience | Next |
 
 ---
 
@@ -47,15 +48,16 @@ Most SRE portfolios show isolated pieces of these challenges: a Terraform file, 
 
 ## Solution
 
-A modular Azure platform built with Terraform, complemented by a Python data pipeline using PySpark and Delta Lake, and instrumented for observability. The project prioritizes:
+A modular Azure platform built with Terraform, complemented by a Python data pipeline using PySpark and Delta Lake, a FastAPI application deployed on Kubernetes, and instrumented for observability. The project prioritizes:
 
-- **Infrastructure as Code** — 7 Terraform modules with remote state, multi-environment structure, and reproducible provisioning
+- **Infrastructure as Code** — 8 Terraform modules with remote state, multi-environment structure, and reproducible provisioning
 - **Security by design** — Key Vault for secrets, Managed Identity for service-to-service authentication, RBAC with least privilege, and no shared account keys
 - **SLO-driven observability** — SLIs and SLOs defined before any tool was chosen
 - **Documented limitations** — ADRs explain every significant decision, including what could not be delivered and why
-- **Local-first development** — the data pipeline runs and is tested locally before any cloud dependency
+- **Local-first development** — the data pipeline and Kubernetes workloads run and are tested locally before any cloud dependency
 - **Data engineering** — a functional pipeline ingesting real data from the Brazilian Central Bank, validated with Pandera, transformed with PySpark, and persisted in Delta Lake
 - **AI integration** — executive summary generation with a fallback strategy for environments where Azure OpenAI is not provisionable
+- **Containerized workloads** — a FastAPI application running on Kubernetes (Kind locally, AKS-ready), with Prometheus metrics and Grafana dashboards
 
 The project intentionally does not attempt to be a production platform. It is a demonstration of professional engineering practices applied to a realistic scenario, executed under the constraints of an Azure for Students subscription.
 
@@ -75,6 +77,8 @@ The patterns demonstrated in this project apply to a range of real-world scenari
 | SLO-driven observability | Any team that wants meaningful alerts instead of dashboard noise |
 | Documented ADRs with alternatives | Any project where technical decisions need to survive turnover |
 | Fallback strategies for restricted environments | Any developer on a constrained subscription or sandbox |
+| Local Kubernetes with Kind + Helm | Any team that wants to develop and test Kubernetes manifests without a cloud cluster |
+| ServiceMonitor-driven metrics | Any Kubernetes workload that needs to be scraped by Prometheus |
 
 ### When this project is directly applicable
 
@@ -82,6 +86,7 @@ The patterns demonstrated in this project apply to a range of real-world scenari
 - An SRE/DevOps engineer who needs a reference implementation for Databricks VNet Injection with SCC
 - A developer learning how to build zero-secret authentication flows with OIDC and Managed Identity
 - A team transitioning from ad-hoc infrastructure to Terraform with proper module boundaries
+- A developer who wants a reference for running containerized workloads on Kind with the same manifests that run on AKS
 - Anyone who needs a reference for documenting platform limitations honestly
 
 ### When it is not applicable
@@ -93,6 +98,7 @@ This is not a production-ready blueprint for the following scenarios:
 - **Enterprise compliance** — would require Defender for Cloud, Azure Policy, SIEM integration, and continuous audit
 - **High-throughput data processing** — the pipeline is designed for batch jobs with modest data volumes
 - **MLOps at scale** — the AI integration is a demonstration, not an ML platform
+- **Large-scale Kubernetes** — Kind is single-node; production clusters require multiple nodes, autoscaling, and disaster recovery
 
 The distinction is intentional: the project is honest about its scope.
 
@@ -100,39 +106,42 @@ The distinction is intentional: the project is honest about its scope.
 
 ## Current State vs. Target State
 
-The project was designed as a multi-phase initiative. Due to limitations of the Azure for Students subscription, some phases could not be fully executed. The table below shows what was delivered and what remains.
+The project was designed as a multi-phase initiative. Due to limitations of the Azure for Students subscription, some capabilities could not be provisioned in the cloud. The table below shows what was delivered and how.
 
 | Capability | Designed | Delivered | Notes |
 |-----------|----------|-----------|-------|
-| Terraform modules | 7 | **7** | All validated |
+| Terraform modules | 7 | **8** | networking, datalake, databricks, monitoring, keyvault, security, ai, aks |
 | Network segmentation | Yes | **Yes** | 6 subnets, delegations, service endpoints |
 | Databricks VNet Injection | Yes | **Yes** | SCC, `NoAzureDatabricksRules` |
-| Data pipeline (batch) | Yes | **Yes** | PySpark + Delta, 10 tests passing |
+| Data pipeline (batch) | Yes | **Yes** | PySpark + Delta, 15 tests passing |
 | Security (Key Vault, MI, RBAC) | Yes | **Yes** | Zero-secret authentication |
 | Observability (SLIs/SLOs) | Yes | **Yes** | Application Insights, workbook, 4 alerts |
 | AI integration | Yes | **Code ready** | Fallback strategy in use; Azure OpenAI not provisionable |
-| CI/CD pipelines | Yes | **Code only** | Cannot execute (billing restriction) |
+| CI/CD pipelines | Yes | **Code ready** | Cannot execute on hosted agents (billing restriction) |
 | Databricks cluster | Yes | **No** | SKU not available on for Students |
-| Azure OpenAI | Yes | **Code only** | Quota restriction on for Students |
-| AKS cluster | Planned | **No** | Not started (Phase 8) |
+| Azure OpenAI | Yes | **Code ready** | Quota restriction on for Students |
+| AKS cluster | Yes | **No (Kind substitute)** | Load Balancer cost exceeds credit; Kind used for demonstration |
+| Kubernetes workloads | Yes | **Yes (Kind)** | FastAPI + Prometheus + Grafana running on Kind |
 | Disaster recovery | Planned | **No** | Not started (Phase 9) |
 | Cost optimization | Planned | **No** | Not started (Phase 10) |
 
 ### What is fully functional
 
-- Terraform infrastructure (all modules provision correctly)
+- Terraform infrastructure (all validated modules)
 - Local data pipeline (runs end-to-end with real data)
-- Observability (metrics flow to Application Insights, alerts are configured)
+- Observability (metrics flow to Application Insights, alerts configured)
 - Security model (Key Vault, Managed Identity, RBAC all active)
+- **Kubernetes workloads on Kind** (API, Prometheus, Grafana, Ingress)
 
 ### What is implemented but not executable in the current environment
 
-- **CI/CD pipelines** — the YAML is complete and validated. Execution requires a Pay-As-You-Go subscription for Azure DevOps billing.
-- **Azure OpenAI integration** — the Terraform module and Python client are ready. Provisioning requires a subscription with Azure OpenAI quota.
+- **CI/CD pipelines** — YAML complete and validated. Execution requires Pay-As-You-Go billing for Azure DevOps.
+- **Azure OpenAI integration** — Terraform module and Python client ready. Provisioning requires a subscription with Azure OpenAI quota.
+- **AKS cluster** — Terraform module preserved and validated. Provisioning requires a subscription with sufficient credit.
 
 ### What has not been started
 
-- AKS workloads, disaster recovery, and cost optimization (Phases 8, 9, 10).
+- Disaster recovery and cost optimization (Phases 9 and 10).
 
 This transparency is intentional. The ADRs document the reasoning behind each limitation.
 
@@ -140,7 +149,7 @@ This transparency is intentional. The ADRs document the reasoning behind each li
 
 ## Target Architecture (Complete Vision)
 
-The diagram below represents the **full target architecture** if all phases were completed. In the current environment, only the components in the left half (through Phase 7) are operational.
+The diagram below represents the **full target architecture** if all phases were completed. Annotations show the current delivery status.
 
 ```
    ┌──────────────────────────────────────────────────────────────┐
@@ -169,17 +178,18 @@ The diagram below represents the **full target architecture** if all phases were
       ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
       │  Delta Lake  │  │  ML Models   │  │  Azure       │
       │  (ADLS Gen2) │  │  (MLflow)    │  │  OpenAI      │
-      │  [Operational]│ │ [Not started]│  │  [Code only] │
+      │  [Operational]│ │ [Not started]│  │  [Code ready]│
       └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
              │                 │                 │
              └─────────────────┼─────────────────┘
                                │
                                ▼
                     ┌─────────────────────┐
-                    │  AKS Cluster        │   [Phase 8]
-                    │                     │
+                    │  Kubernetes         │   [Kind operational]
+                    │                     │   [AKS module ready]
                     │  REST APIs          │
                     │  Dashboards         │
+                    │  Prometheus/Grafana │
                     └──────────┬──────────┘
                                │
                                ▼
@@ -190,7 +200,9 @@ The diagram below represents the **full target architecture** if all phases were
 
 ---
 
-## Current Architecture (Phase 7)
+## Current Architecture
+
+### Azure (Phase 7)
 
 ```
                          AZURE SUBSCRIPTION
@@ -239,6 +251,27 @@ The diagram below represents the **full target architecture** if all phases were
         - Azure Monitor Workspace (dev-sredatabricks-amw)
 ```
 
+### Local Kubernetes (Phase 8)
+
+```
+   ┌──────────────────────────────────────────────────────────┐
+   │  Kind cluster (jc-sre-local)                             │
+   │                                                          │
+   │   Namespace: jc-sre                                      │
+   │                                                          │
+   │   ┌────────────┐   ┌─────────────┐   ┌──────────────┐    │
+   │   │ API pods   │──▶│ Prometheus  │──▶│  Grafana     │    │
+   │   │ (FastAPI)  │   │             │   │  Dashboard   │    │
+   │   └─────┬──────┘   └─────────────┘   └──────────────┘    │
+   │         │                                                │
+   │         │ NGINX Ingress                                  │
+   │         ▼                                                │
+   │   http://jc-sre.local                                    │
+   │                                                          │
+   │   Volume: spark-warehouse (from host via extraMount)     │
+   └──────────────────────────────────────────────────────────┘
+```
+
 ### Data Pipeline Architecture (Phase 3 + Phase 7)
 
 ```
@@ -278,6 +311,14 @@ The diagram below represents the **full target architecture** if all phases were
    │      - variations    │
    │      - monthly_agg   │
    │      - summaries     │
+   └──────────────────────┘
+              │
+              │ read by
+              ▼
+   ┌──────────────────────┐
+   │  FastAPI             │
+   │  src/api_server/     │
+   │  (Deployed on Kind)  │
    └──────────────────────┘
 ```
 
@@ -384,13 +425,108 @@ The diagram below represents the **full target architecture** if all phases were
 - [x] ADR-004 documenting the strategy and activation procedure
 - [x] Documented limitation: Azure for Students cannot provision Azure OpenAI quota
 
+### Phase 8 — AKS and Containerized Workloads
+
+- [x] Terraform module for AKS (preserved, not applied)
+- [x] FastAPI application with 7 endpoints (`/health`, `/ready`, `/metrics`, `/series`, `/series/{name}/latest`, `/series/{name}/history`, `/summary`)
+- [x] Pydantic schemas for all responses
+- [x] SparkSession manager with startup/shutdown lifecycle
+- [x] Delta Lake reader service
+- [x] Multi-stage Dockerfile with non-root user
+- [x] Prometheus middleware for HTTP metrics
+- [x] Kind cluster with NGINX Ingress and `extraMounts`
+- [x] Helm chart for the API (`kubernetes/helm/jc-sre-api/`)
+- [x] Helm chart for the monitoring stack (`kubernetes/helm/jc-sre-monitoring/`)
+- [x] ServiceMonitor for automatic target discovery
+- [x] Grafana dashboard provisioned via ConfigMap
+- [x] Custom HTTP metrics (`http_requests_total`, `http_request_duration_seconds`, `http_requests_in_progress`)
+- [x] Automation scripts (`kind-setup`, `kind-build-and-load`, `kind-deploy`, `kind-monitoring-up`)
+- [x] Makefile targets for the full Kind lifecycle
+- [x] 15 tests passing (10 previous + 5 new for the API)
+- [x] ADR-005 documenting the local-first strategy
+
+---
+
+## Kubernetes
+
+The project deploys a FastAPI application on Kubernetes, demonstrating containerization, Helm packaging, Ingress, and observability without provisioning AKS. The AKS Terraform module is preserved in the codebase for future activation.
+
+### Why Kind instead of AKS
+
+AKS has continuous cost even with zero nodes (Load Balancer alone is ~$18/month). The Azure for Students subscription cannot sustain this cost, so the demonstration uses **Kind** (Kubernetes in Docker). The manifests, Helm charts, ServiceMonitor, and Grafana dashboards are identical to what would run on AKS.
+
+See [ADR-005](docs/architecture/adr-005-aks-local-first.md) for the full decision record and the activation procedure.
+
+### Stack
+
+| Component | Purpose |
+|-----------|---------|
+| Kind | Local Kubernetes cluster |
+| NGINX Ingress | HTTP routing to the API |
+| Helm | Application and monitoring packaging |
+| kube-prometheus-stack | Prometheus, Grafana, Alertmanager, exporters |
+| ServiceMonitor | Auto-discovery of the API as a scrape target |
+| Prometheus middleware | Custom HTTP metrics in the FastAPI app |
+
+### Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /health` | Liveness probe |
+| `GET /ready` | Readiness probe (verifies Delta access) |
+| `GET /metrics` | Prometheus metrics |
+| `GET /series` | List available series |
+| `GET /series/{name}/latest` | Latest month for a series |
+| `GET /series/{name}/history` | Historical monthly data |
+| `GET /summary` | Latest executive summary |
+
+### How to run
+
+```bash
+make kind-up          # Cluster + NGINX
+make kind-build       # Build and load API image
+make kind-deploy      # Deploy via Helm
+make kind-monitoring  # Prometheus + Grafana
+```
+
+Access:
+
+- API: `http://jc-sre.local`
+- Grafana: `http://localhost:3000` (admin / prom-operator)
+- Prometheus: `http://localhost:9090`
+
+### Grafana dashboard
+
+The provisioned dashboard `JC SRE API - Overview` contains seven panels:
+
+- Request rate by endpoint
+- Request latency (p50, p95, p99)
+- Error rate (5xx)
+- Requests in progress
+- API memory usage
+- Requests by status code
+- API container restarts
+
+### Activation procedure for AKS
+
+The AKS Terraform module is validated and ready. To activate it:
+
+1. Uncomment the `module "aks"` block in `terraform/environments/dev/main.tf`
+2. Uncomment the AKS outputs
+3. Run `terraform apply`
+4. Configure `kubectl` with `az aks get-credentials`
+5. Apply the same Helm charts: `helm install jc-sre-api kubernetes/helm/jc-sre-api`
+
+Full procedure in [ADR-005](docs/architecture/adr-005-aks-local-first.md).
+
+See [Phase 8 — AKS and Containerized Workloads](docs/phases/phase-8-aks.md) for the implementation record.
+
 ---
 
 ## Planned Features
 
 The following phases have not been started:
 
-- [ ] AKS cluster and containerized workloads (Phase 8)
 - [ ] Disaster recovery strategy and runbooks (Phase 9)
 - [ ] Cost management and FinOps practices (Phase 10)
 
@@ -401,6 +537,7 @@ If the subscription is upgraded to Pay-As-You-Go, the following become possible:
 - [ ] Execute Azure DevOps pipelines on Microsoft-hosted agents
 - [ ] Provision a Databricks cluster for pipeline execution
 - [ ] Provision and use Azure OpenAI for AI-generated summaries
+- [ ] Provision the AKS cluster and run the same workloads on managed Kubernetes
 - [ ] Migrate Workbook and Alert Rules from manual creation to Terraform
 
 None of these require code changes. The infrastructure and pipeline code
@@ -464,6 +601,7 @@ Seven instruments are emitted via OpenTelemetry:
 - A Workbook `Pipeline Overview` in Application Insights renders five panels covering all SLIs
 - Four alert rules are configured, aligned with the SLOs: `pipeline-failure`, `pipeline-data-stale`, `pipeline-low-volume`, `pipeline-slow`
 - Alerts notify the `sre-oncall` action group via email
+- For Kubernetes workloads, a separate Grafana dashboard (JC SRE API - Overview) shows HTTP metrics via Prometheus
 
 ### Architectural decision
 
@@ -518,6 +656,7 @@ A legacy Service Principal with Contributor at the subscription scope was identi
 - Use TLS 1.2 minimum and disable public blob access
 - Enable Hierarchical Namespace for ADLS Gen2
 - Use Secure Cluster Connectivity for Databricks
+- Container images run as non-root (UID 1000)
 
 The full security posture is documented in [docs/architecture/security-model.md](docs/architecture/security-model.md). The architectural decisions are captured in [ADR-003](docs/architecture/adr-003-security-model.md).
 
@@ -601,11 +740,18 @@ Before getting started, install:
 - Git
 - Terraform >= 1.5.0
 - Azure CLI
-- Python 3.12+ (for local pipeline)
-- Java 17 (for PySpark)
+- Python 3.12+ (for local pipeline and API)
+- Java 17+ (for PySpark)
 - Databricks CLI
 - kubectl
 - Make
+
+**For local Kubernetes (Kind):**
+
+- Docker 20.10+
+- Kind 0.20+
+- kubectl 1.28+
+- Helm 3.12+
 
 You also need:
 
@@ -618,6 +764,7 @@ You also need:
 - Databricks clusters cannot be provisioned (SKU restrictions). See [ADR-001](docs/architecture/adr-001-databricks-cluster-limitation.md).
 - Azure OpenAI cannot be provisioned (quota restrictions). See [ADR-004](docs/architecture/adr-004-ai-integration.md).
 - Azure DevOps pipelines cannot run on hosted agents (billing restrictions). See [Phase 4](docs/phases/phase-4-cicd.md).
+- AKS cannot be provisioned (continuous cost of the Load Balancer exceeds the remaining credit). See [ADR-005](docs/architecture/adr-005-aks-local-first.md).
 
 ---
 
@@ -678,6 +825,17 @@ make pipeline-run
 make pipeline-query
 ```
 
+### 9. (Optional) Deploy on Local Kubernetes
+
+```bash
+make kind-up
+make kind-build
+make kind-deploy
+make kind-monitoring
+```
+
+The API will be available at `http://jc-sre.local`. Grafana at `http://localhost:3000` (admin / prom-operator).
+
 ---
 
 ## Make Commands
@@ -712,6 +870,20 @@ make pipeline-query
 | `make pipeline-query` | Query the monthly aggregates Delta table |
 | `make pipeline-clean` | Remove local Delta tables and caches |
 
+### Local Kubernetes (Kind)
+
+| Command | Description |
+|---------|-------------|
+| `make kind-up` | Create Kind cluster + NGINX Ingress |
+| `make kind-down` | Delete the Kind cluster |
+| `make kind-build` | Build the API image and load into Kind |
+| `make kind-deploy` | Deploy the API via Helm |
+| `make kind-monitoring` | Install Prometheus + Grafana |
+| `make kind-monitoring-port-forward` | Forward Grafana and Prometheus ports |
+| `make kind-status` | Show cluster, pods, and ingress |
+| `make kind-logs` | Tail API logs |
+| `make kind-all` | Run the full sequence: cluster + build + deploy |
+
 > **Warning:** `terraform-apply` and `terraform-destroy` modify or remove Azure resources. Always review the plan before applying.
 
 ---
@@ -735,18 +907,22 @@ jc-azure-sre-databricks-platform/
 │   │   ├── monitoring/       # Application Insights, Log Analytics
 │   │   ├── keyvault/         # Key Vault and Managed Identity
 │   │   ├── security/         # Role assignments
-│   │   └── ai/               # Azure OpenAI (preserved, not applied)
+│   │   ├── ai/               # Azure OpenAI (preserved, not applied)
+│   │   └── aks/              # AKS cluster (preserved, not applied)
 │   └── environments/
 │       ├── dev/
 │       ├── staging/
 │       └── prod/
 │
 ├── python/
+│   ├── Dockerfile            # Multi-stage build for the API
+│   ├── .dockerignore
 │   ├── requirements.txt
 │   ├── pytest.ini
 │   ├── src/
 │   │   ├── ai/               # AI integration (client, fallback, prompts, summarizer)
 │   │   ├── api/              # BCB SGS client
+│   │   ├── api_server/       # FastAPI application
 │   │   ├── pipeline/         # ingest, validate, transform, persist
 │   │   └── utils/            # logging, spark helpers, credentials
 │   └── tests/                # unit and smoke tests
@@ -763,10 +939,21 @@ jc-azure-sre-databricks-platform/
 ├── monitoring/
 │   └── slos.md              # SLIs, SLOs, error budget policy
 │
-├── security/                 # RBAC and security-related Terraform (module)
 ├── kubernetes/
+│   ├── kind/                 # Kind cluster configuration (generated)
+│   ├── manifests/            # Raw Kubernetes manifests
+│   └── helm/
+│       ├── jc-sre-api/       # API Helm chart
+│       └── jc-sre-monitoring/# Monitoring stack (kube-prometheus-stack wrapper)
+│
+├── security/                 # RBAC and security-related Terraform (module)
 ├── scripts/
-│   └── setup-local.sh
+│   ├── setup-local.sh
+│   ├── kind-setup.sh
+│   ├── kind-teardown.sh
+│   ├── kind-build-and-load.sh
+│   ├── kind-deploy.sh
+│   └── kind-monitoring-up.sh
 │
 └── docs/
     ├── README.md
@@ -779,14 +966,16 @@ jc-azure-sre-databricks-platform/
     │   ├── phase-4-cicd.md
     │   ├── phase-5-observability.md
     │   ├── phase-6-security.md
-    │   └── phase-7-ai.md
+    │   ├── phase-7-ai.md
+    │   └── phase-8-aks.md
     ├── architecture/
     │   ├── README.md
     │   ├── security-model.md
     │   ├── adr-001-databricks-cluster-limitation.md
     │   ├── adr-002-observability-stack.md
     │   ├── adr-003-security-model.md
-    │   └── adr-004-ai-integration.md
+    │   ├── adr-004-ai-integration.md
+    │   └── adr-005-aks-local-first.md
     ├── operations/
     │   └── README.md
     └── troubleshooting/
@@ -808,6 +997,8 @@ jc-azure-sre-databricks-platform/
 | Databricks | `{env}-{project}-dbw` | `dev-sredatabricks-dbw` |
 | Key Vault | `{env}-{project}-kv` | `dev-sredatabricks-kv` |
 | Managed Identity | `{env}-{project}-{purpose}-mi` | `dev-sredatabricks-dbw-mi` |
+| AKS | `{env}-{project}-aks` | `dev-sredatabricks-aks` |
+| Kind Cluster | `{project}-local` | `jc-sre-local` |
 
 ### Tags
 
@@ -822,9 +1013,9 @@ All resources are tagged with:
 | Subnet | CIDR | Purpose |
 |--------|------|---------|
 | databricks | 10.0.1.0/24 | Databricks public subnet (delegated) |
-| aks | 10.0.2.0/24 | AKS cluster nodes (future) |
+| aks | 10.0.2.0/24 | AKS cluster nodes |
 | data | 10.0.3.0/24 | Data services |
-| monitoring | 10.0.4.0/24 | Prometheus and Grafana (future) |
+| monitoring | 10.0.4.0/24 | Prometheus and Grafana |
 | private_endpoints | 10.0.5.0/24 | Private endpoints for PaaS |
 | databricks_private | 10.0.6.0/24 | Databricks private subnet (delegated) |
 
@@ -846,12 +1037,14 @@ Detailed documentation is available under `docs/`:
 | [Phase 5 — Observability](docs/phases/phase-5-observability.md) | SLIs/SLOs, metrics, dashboards, alerts |
 | [Phase 6 — Security](docs/phases/phase-6-security.md) | Key Vault, RBAC, Managed Identities, cleanup |
 | [Phase 7 — AI Integration](docs/phases/phase-7-ai.md) | Executive summaries with fallback strategy |
+| [Phase 8 — AKS and Containerized Workloads](docs/phases/phase-8-aks.md) | Kubernetes, Helm, Prometheus, Grafana |
 | [Security Model](docs/architecture/security-model.md) | Full security posture reference |
 | [ADR-001](docs/architecture/adr-001-databricks-cluster-limitation.md) | Databricks cluster limitation |
 | [ADR-002](docs/architecture/adr-002-observability-stack.md) | Observability stack selection |
 | [ADR-003](docs/architecture/adr-003-security-model.md) | Security model decisions |
 | [ADR-004](docs/architecture/adr-004-ai-integration.md) | AI integration strategy |
-| [Operations](docs/operations/README.md) | Runbooks and procedures |
+| [ADR-005](docs/architecture/adr-005-aks-local-first.md) | AKS local-first strategy |
+| [Operations](docs/operations/README.md) | Runbooks, Kind setup, post-apply checklist |
 | [Troubleshooting](docs/troubleshooting/README.md) | Known issues and fixes |
 
 ---
@@ -862,9 +1055,10 @@ The project runs on a constrained budget. Controls in place:
 
 - Databricks clusters with aggressive auto-termination (when provisionable)
 - Only necessary resources kept active
-- All resources can be destroyed with `make terraform-destroy`
+- All Azure resources can be destroyed with `make terraform-destroy`
 - Data pipeline runs locally, avoiding compute costs in the cloud
 - AI summaries use deterministic fallback (no token costs in current environment)
+- Kubernetes workloads run on Kind (no cloud cost)
 - Azure Cost Management for monitoring (planned for Phase 10)
 
 ---
@@ -873,7 +1067,7 @@ The project runs on a constrained budget. Controls in place:
 
 Some resources were created manually in the Azure portal (Workbook, Action Group, Alert Rules, the Application Insights secret in Key Vault). They are documented in the [Post-apply checklist](docs/operations/README.md) and must be recreated after each `terraform destroy` + `terraform apply` cycle.
 
-Migration to Terraform is planned for a later phase (see [ADR-002](docs/architecture/adr-002-observability-stack.md)).
+The AI and AKS modules are preserved but not applied. Their activation procedures are documented in [ADR-004](docs/architecture/adr-004-ai-integration.md) and [ADR-005](docs/architecture/adr-005-aks-local-first.md).
 
 ---
 
@@ -889,8 +1083,8 @@ Migration to Terraform is planned for a later phase (see [ADR-002](docs/architec
 | **Phase 5** | Observability: SLIs/SLOs, Application Insights, alerts | Completed |
 | **Phase 6** | Security: Key Vault, RBAC, Managed Identities, cleanup | Completed |
 | **Phase 7** | AI Integration: executive summaries with fallback strategy | Completed |
-| **Phase 8** | AKS and containerized workloads | Next |
-| **Phase 9** | Disaster recovery and resilience | Planned |
+| **Phase 8** | Kubernetes: API on Kind, Prometheus, Grafana | Completed |
+| **Phase 9** | Disaster recovery and resilience | Next |
 | **Phase 10** | Cost optimization and governance | Planned |
 
 ---
@@ -929,3 +1123,5 @@ Telecommunications Engineer | DevOps | SRE | Networking
 - PySpark and Delta Lake communities
 - Prometheus and Grafana
 - Kubernetes
+- Kind
+- Helm

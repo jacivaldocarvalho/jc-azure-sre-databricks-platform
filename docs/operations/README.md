@@ -33,7 +33,7 @@ Planned runbooks, to be added as the project progresses:
 
 ## Day-to-Day Operations
 
-### 1. Provision the Full Environment
+### 1. Provision the Full Azure Environment
 
 ```bash
 cd ~/projetos/jc-azure-sre-databricks-platform
@@ -44,7 +44,7 @@ make terraform-apply
 
 Takes approximately 15 to 25 minutes, dominated by the Databricks Workspace creation.
 
-### 2. Destroy the Environment
+### 2. Destroy the Azure Environment
 
 ```bash
 make terraform-destroy
@@ -72,7 +72,7 @@ source .venv/bin/activate
 pytest tests/ -v
 ```
 
-Takes approximately 15 to 25 seconds.
+Takes approximately 25 to 30 seconds.
 
 ### 5. Clean Local Artifacts
 
@@ -86,40 +86,130 @@ Removes Delta tables, Pytest cache, and Python bytecode.
 
 ---
 
-## AI Integration Modes
+## Local Kubernetes (Kind)
 
-The pipeline supports two modes for generating executive summaries, controlled by the `AZURE_OPENAI_ENABLED` environment variable.
+The project supports running the API on a local Kubernetes cluster via Kind.
+This is the primary way to demonstrate Kubernetes-related features without
+provisioning AKS. See [ADR-005](../architecture/adr-005-aks-local-first.md).
 
-| Mode | Trigger | Summary source |
-|------|---------|----------------|
-| Fallback | `AZURE_OPENAI_ENABLED=false` or unset | Deterministic generator (`python/src/ai/fallback.py`) |
-| Azure OpenAI | `AZURE_OPENAI_ENABLED=true` and endpoint set | Deployed `gpt-4o-mini` model |
+### Full setup in four commands
 
-### How to check the current mode
-
-Inspect the pipeline log for one of the following lines:
-
-```
-INFO | src.ai.summarizer | Azure OpenAI is not enabled. Using fallback generator.
+```bash
+make kind-up          # Create Kind cluster + NGINX Ingress (~2 min)
+make kind-build       # Build the API image + load into Kind (~30 s with cache)
+make kind-deploy      # Deploy the API via Helm (~1 min)
+make kind-monitoring  # Install Prometheus + Grafana (~3-5 min)
 ```
 
-or
+After the setup completes:
+
+- The API is accessible at `http://jc-sre.local`
+- The Grafana dashboard is accessible via port-forward at `http://localhost:3000`
+- Prometheus is accessible via port-forward at `http://localhost:9090`
+
+### Prerequisites
+
+| Tool | Version | Notes |
+|------|---------|-------|
+| Docker | 20.10+ | Required by Kind |
+| Kind | 0.20+ | Kubernetes in Docker |
+| kubectl | 1.28+ | Kubernetes CLI |
+| Helm | 3.12+ | Chart packaging |
+
+Also ensure `/etc/hosts` contains:
 
 ```
-INFO | src.ai.summarizer | Azure OpenAI is enabled. Invoking model.
+127.0.0.1  jc-sre.local
 ```
 
-The generated summary is persisted in the Delta table `spark-warehouse/processed/summaries` with a column `is_fallback` that distinguishes the two modes.
+### Makefile targets
 
-### Why the fallback exists
+| Target | Purpose |
+|--------|---------|
+| `make kind-up` | Create the Kind cluster and install NGINX Ingress |
+| `make kind-down` | Delete the Kind cluster |
+| `make kind-build` | Build the API Docker image and load it into Kind |
+| `make kind-deploy` | Deploy the API via Helm |
+| `make kind-monitoring` | Install the kube-prometheus-stack |
+| `make kind-monitoring-port-forward` | Forward Grafana and Prometheus ports |
+| `make kind-status` | Show cluster, pods, and ingress status |
+| `make kind-logs` | Tail the API logs |
+| `make kind-all` | Full sequence: cluster + build + deploy |
 
-Azure for Students subscriptions cannot provision Azure OpenAI due to quota restrictions. See [ADR-004](../architecture/adr-004-ai-integration.md) for the full decision record.
+### Accessing Grafana and Prometheus
 
-The fallback allows the pipeline to remain functional in the current environment while preserving the interface for when Azure OpenAI becomes available.
+The monitoring stack is exposed only within the cluster. Use port-forwards to access:
+
+```bash
+# Grafana
+kubectl port-forward -n jc-sre svc/jc-sre-monitoring-grafana 3000:80
+
+# Prometheus
+kubectl port-forward -n jc-sre svc/jc-sre-monitoring-prometheus 9090:9090
+```
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Grafana | http://localhost:3000 | admin / prom-operator |
+| Prometheus | http://localhost:9090 | (none) |
+
+### Accessing the API
+
+The API is exposed via Ingress at `http://jc-sre.local`. If the Ingress is not working, use port-forward directly:
+
+```bash
+kubectl port-forward -n jc-sre svc/jc-sre-api 8080:80
+curl http://localhost:8080/health
+```
+
+### Verifying the monitoring pipeline
+
+The monitoring pipeline has four stages. Verify each:
+
+```bash
+# 1. The API exposes metrics
+kubectl exec -n jc-sre deploy/jc-sre-api -- curl -s http://localhost:8080/metrics | grep "^http_" | head
+
+# 2. The ServiceMonitor is discovered
+kubectl get servicemonitor -n jc-sre jc-sre-api
+
+# 3. The Prometheus target is UP
+kubectl port-forward -n jc-sre svc/jc-sre-monitoring-prometheus 9090:9090
+# Open http://localhost:9090/targets and look for jc-sre-api
+
+# 4. The dashboard renders
+# Open http://localhost:3000 → Dashboards → JC SRE API - Overview
+```
+
+### Generating test traffic
+
+The dashboard needs traffic to populate. Generate some with:
+
+```bash
+for i in {1..30}; do
+  curl -s http://jc-sre.local/health > /dev/null
+  curl -s http://jc-sre.local/series > /dev/null
+  curl -s http://jc-sre.local/series/selic/latest > /dev/null
+  curl -s http://jc-sre.local/summary > /dev/null
+done
+```
+
+### Teardown
+
+```bash
+make kind-down
+```
+
+This removes the cluster and all workloads. The Docker image remains in
+the local Docker daemon. To remove it:
+
+```bash
+docker rmi jc-sre-databricks-api:latest
+```
 
 ---
 
-## Post-Apply Checklist
+## Post-Apply Checklist (Azure)
 
 Some resources were created manually or are not fully managed by Terraform. They must be recreated or verified after each `terraform destroy` + `terraform apply` cycle.
 
@@ -127,7 +217,7 @@ Some resources were created manually or are not fully managed by Terraform. They
 
 For speed of iteration and KQL query tuning, the Workbook and alert rules were created in the portal first. The migration to Terraform is planned for a future phase. Additionally, the Azure DevOps Service Principal scope change was applied manually since the SP was created outside of Terraform.
 
-The AI integration does not require manual recreation: the Terraform module is preserved but commented out in the environment wiring (see [ADR-004](../architecture/adr-004-ai-integration.md)).
+The AI integration and AKS do not require manual recreation: their Terraform modules are preserved but commented out in the environment wiring (see [ADR-004](../architecture/adr-004-ai-integration.md) and [ADR-005](../architecture/adr-005-aks-local-first.md)).
 
 ### Resources to recreate or verify
 
@@ -223,7 +313,7 @@ az role assignment list \
 
 **Expected:** Contributor at the Resource Group scope.
 
-If the assignment is missing (e.g., after a fresh recreation of the Service Principal), recreate it:
+If the assignment is missing, recreate it:
 
 ```bash
 az role assignment create \
@@ -256,9 +346,9 @@ az role assignment list \
 
 **Expected:** two assignments (Key Vault Administrator for the user, Key Vault Secrets User for the Managed Identity).
 
-#### 7. Verify AI Integration Configuration
+#### 7. Verify AI and AKS Configuration
 
-The AI integration does not require manual recreation (the Terraform module is preserved but commented out). However, after a fresh apply, verify the `.env` reflects the intended mode:
+Neither AI nor AKS require manual recreation. Verify that the `.env` and Terraform configuration reflect the intended mode:
 
 ```bash
 grep "AZURE_OPENAI" .env
@@ -270,7 +360,87 @@ grep "AZURE_OPENAI" .env
 AZURE_OPENAI_ENABLED=false
 ```
 
-If Azure OpenAI becomes available in the future, update the `.env` and uncomment the module in the Terraform configuration. The full procedure is documented in [ADR-004](../architecture/adr-004-ai-integration.md).
+The AKS module is commented out. Its activation procedure is documented in [ADR-005](../architecture/adr-005-aks-local-first.md).
+
+---
+
+## Troubleshooting Local Kubernetes
+
+### Pod stuck in `ContainerCreating`
+
+**Symptom:** pod shows `ContainerCreating` for more than a few minutes.
+
+**Cause:** the `hostPath` volume is not mounted correctly. In Kind, `hostPath` refers to the node's filesystem, not the host.
+
+**Diagnosis:**
+
+```bash
+kubectl describe pod -n jc-sre -l app.kubernetes.io/name=jc-sre-api
+```
+
+**Fix:** ensure the cluster was created with `extraMounts` pointing to
+`python/spark-warehouse`. Recreate the cluster:
+
+```bash
+make kind-down
+make kind-up
+```
+
+### `PermissionError: /home/spark-warehouse`
+
+**Symptom:** the API logs show `PermissionError` when initializing Spark.
+
+**Cause:** the Spark code was computing the warehouse directory from
+`__file__` instead of respecting `DELTA_WAREHOUSE_PATH`.
+
+**Fix:** ensure `python/src/utils/spark.py` respects the
+`DELTA_WAREHOUSE_PATH` environment variable (this was fixed in Phase 8).
+
+### ServiceMonitor not discovered by Prometheus
+
+**Symptom:** the dashboard in Grafana shows "No data" for API metrics.
+
+**Cause:** the selector in the ServiceMonitor does not match the labels on
+the Service.
+
+**Diagnosis:**
+
+```bash
+kubectl get servicemonitor -n jc-sre jc-sre-api -o jsonpath='{.spec.selector.matchLabels}{"\n"}'
+kubectl get svc -n jc-sre jc-sre-api --show-labels
+```
+
+The `matchLabels` in the ServiceMonitor must be a subset of the Service's
+labels. In this project, both use `app.kubernetes.io/name=jc-sre-api`.
+
+**Fix:** update the ServiceMonitor selector, then apply the Helm upgrade.
+
+### `helm upgrade` fails with `Chart.yaml file is missing`
+
+**Symptom:** Helm cannot read the chart even though `Chart.yaml` exists.
+
+**Cause:** an overly aggressive `.helmignore` in the chart directory can
+prevent Helm from reading essential files.
+
+**Fix:** remove or disable the `.helmignore`:
+
+```bash
+mv kubernetes/helm/jc-sre-monitoring/.helmignore \
+   kubernetes/helm/jc-sre-monitoring/.helmignore.disabled
+```
+
+Then retry the upgrade.
+
+### Docker build fails with `Package openjdk-17-jre-headless is not available`
+
+**Symptom:** the Docker build fails on the runtime stage.
+
+**Cause:** `python:3.12-slim` moved from Debian 12 (Bookworm) to Debian 13
+(Trixie), which replaced OpenJDK 17 with 21.
+
+**Fix:** either update the Dockerfile to use `openjdk-21-jre-headless`, or
+pin the base image to `python:3.12-slim-bookworm`. The project uses the
+second approach for reproducibility.
 
 ---
 
@@ -283,7 +453,6 @@ The following checks should be performed periodically to maintain the security p
 #### 1. Review role assignments
 
 ```bash
-# All role assignments in the subscription
 az role assignment list \
   --all \
   --query "[].{Principal:principalName, Type:principalType, Role:roleDefinitionName, Scope:scope}" \
@@ -298,13 +467,11 @@ az role assignment list \
 #### 2. Review secrets and credentials
 
 ```bash
-# List all secrets in Key Vault
 az keyvault secret list \
   --vault-name dev-sredatabricks-kv \
   --query "[].{Name:name, Enabled:attributes.enabled, Expires:attributes.expires}" \
   -o table
 
-# List all credentials (client secrets) of the Azure DevOps App Registration
 az ad app credential list \
   --id f0fa3958-4d24-45d1-bdb4-e8af5f4d7147 \
   --query "[].{Name:displayName, EndDate:endDateTime}" \
@@ -321,14 +488,12 @@ az ad app credential list \
 #### 3. Review the Managed Identity
 
 ```bash
-# Confirm the Managed Identity exists and is assigned to the workspace
 az identity show \
   --name dev-sredatabricks-dbw-mi \
   --resource-group dev-sredatabricks-rg \
   --query "{Name:name, ClientId:clientId, PrincipalId:principalId}" \
   -o table
 
-# List all role assignments for the Managed Identity
 MI_PRINCIPAL=$(az identity show --name dev-sredatabricks-dbw-mi --resource-group dev-sredatabricks-rg --query principalId -o tsv)
 
 az role assignment list \
@@ -339,7 +504,7 @@ az role assignment list \
 ```
 
 **What to check:**
-- Only the expected roles are present (Key Vault Secrets User, Storage Blob Data Contributor)
+- Only the expected roles are present
 - No unexpected scope expansion
 
 #### 4. Review the Key Vault access
@@ -359,17 +524,10 @@ az role assignment list \
 
 #### Rotating the Application Insights connection string
 
-1. Recreate the Application Insights (or generate a new connection string):
-
 ```bash
-# This is normally done by terraform destroy + apply on the monitoring module
 cd terraform/environments/dev
 terraform apply -replace=module.monitoring.azurerm_application_insights.main
-```
 
-2. Update the Key Vault secret:
-
-```bash
 terraform output -raw application_insights_connection_string > /tmp/ai-conn.txt
 tr -d '\n' < /tmp/ai-conn.txt > /tmp/ai-conn-clean.txt
 
@@ -381,11 +539,7 @@ az keyvault secret set \
 rm /tmp/ai-conn.txt /tmp/ai-conn-clean.txt
 ```
 
-3. Restart any process that holds the connection string in memory (the local pipeline will pick it up on the next run).
-
 #### Rotating the Azure CLI session
-
-The Azure CLI session is refreshed automatically on `az login`. To force a refresh:
 
 ```bash
 az logout
@@ -393,80 +547,25 @@ az login
 az account set --subscription <SUBSCRIPTION_ID>
 ```
 
-The session is used by both Terraform and the Python pipeline in local development.
-
 #### Enabling Azure OpenAI (when quota becomes available)
 
-When the subscription is upgraded to a plan that supports Azure OpenAI, follow these steps:
+See [ADR-004](../architecture/adr-004-ai-integration.md) for the step-by-step procedure.
 
-**Step 1: Enable the Terraform module**
+#### Enabling the AKS cluster (when credit becomes available)
 
-In `terraform/environments/dev/main.tf`, uncomment:
-
-```hcl
-module "ai" {
-  source = "../../modules/ai"
-
-  resource_group_name = azurerm_resource_group.main.name
-  environment         = var.environment
-  project_name        = var.project_name
-  openai_location     = var.openai_location
-  tags                = var.tags
-}
-```
-
-Also uncomment the AI outputs (`openai_endpoint`, `openai_account_name`, `openai_deployment_name`, `openai_location`).
-
-**Step 2: Pass the account ID to the security module**
-
-In the same file, change the security module:
-
-```hcl
-openai_account_id = module.ai.account_id
-```
-
-**Step 3: Apply the infrastructure**
-
-```bash
-make terraform-init
-make terraform-plan
-make terraform-apply
-```
-
-**Step 4: Update the local `.env`**
-
-```bash
-AZURE_OPENAI_ENABLED=true
-AZURE_OPENAI_ENDPOINT=<endpoint from terraform output>
-AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
-```
-
-**Step 5: Run the pipeline**
-
-```bash
-cd python
-python -m src.run_pipeline --start 2024-01-01 --end 2025-12-31
-```
-
-The log should show `Azure OpenAI is enabled. Invoking model.`, and the `summaries` Delta table should have `is_fallback=false`.
-
-**Note:** when the AI module is enabled, the `security` module assigns the `Cognitive Services OpenAI User` role to the pipeline Managed Identity. No additional manual permission changes are required.
+See [ADR-005](../architecture/adr-005-aks-local-first.md) for the step-by-step procedure.
 
 #### Revoking the Azure DevOps Federated Credential
 
-If the Service Connection is compromised or needs recreation:
-
 ```bash
-# List federated credentials
 az ad app federated-credential list --id f0fa3958-4d24-45d1-bdb4-e8af5f4d7147 -o table
 
-# Delete a specific credential
 az ad app federated-credential delete \
   --id f0fa3958-4d24-45d1-bdb4-e8af5f4d7147 \
   --federated-credential-id <credential-name>
 ```
 
-Recreate it with the exact issuer and subject that Azure DevOps generates (see `docs/phases/phase-4-cicd.md`).
+Recreate it with the exact issuer and subject that Azure DevOps generates.
 
 ---
 
@@ -478,17 +577,18 @@ Recreate it with the exact issuer and subject that Azure DevOps generates (see `
 - Check the subscription credit balance
 - Review the `Pipeline Overview` workbook for anomalies
 - Confirm no alerts are firing
-- Verify the AI summary mode: check the last pipeline log for the `Azure OpenAI is not enabled` or `Azure OpenAI is enabled` line
+- Verify the AI summary mode in the last pipeline log
 
 ### Before Each Session
 
 - Confirm the correct subscription is active: `az account show`
 - Confirm the `.env` file is present and populated
-- Confirm the `AZURE_USE_CLI=true` variable is set for local development
+- Confirm `AZURE_USE_CLI=true` is set for local development
 
 ### After Each Session
 
-- If resources were provisioned for the session, destroy them (`make terraform-destroy`)
+- Destroy Azure resources if they were provisioned (`make terraform-destroy`)
+- Tear down the Kind cluster if it was created (`make kind-down`)
 - Verify the Terraform state is consistent: `terraform plan` should report no changes
 
 ---
@@ -501,7 +601,7 @@ This is a solo portfolio project. There is no on-call rotation. The escalation p
 2. Consult the phase documentation in `../phases/`
 3. Consult the architecture ADRs in `../architecture/`
 4. Consult the troubleshooting guides in `../troubleshooting/`
-5. Consult the original cloud provider documentation (Microsoft, Databricks, Terraform)
+5. Consult the original cloud provider documentation (Microsoft, Databricks, Terraform, Kind, Helm)
 
 ---
 
@@ -511,5 +611,6 @@ This is a solo portfolio project. There is no on-call rotation. The escalation p
 - [Architecture](../architecture/) — architectural decisions
 - [Security Model](../architecture/security-model.md) — full security posture
 - [AI Integration Strategy](../architecture/adr-004-ai-integration.md) — AI decisions and activation procedure
+- [AKS Local-First Strategy](../architecture/adr-005-aks-local-first.md) — Kubernetes decisions and activation procedure
 - [Troubleshooting](../troubleshooting/) — problem resolution guides
 - [Conventions](../conventions.md) — project standards
