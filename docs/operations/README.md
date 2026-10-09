@@ -16,17 +16,38 @@ This is a working document. As new operational scenarios are encountered, they a
 
 ```
 docs/operations/
-├── README.md               # This file
-└── (future runbooks will be added here)
+├── README.md                            # This file
+├── disaster-recovery.md                 # RTO/RPO reference
+├── dr-test-log.md                       # Record of executed DR tests
+└── runbooks/
+    ├── recover-terraform-state.md       # Rollback and undelete procedures
+    ├── recover-keyvault-secret.md       # Secret recovery procedures
+    ├── reprovision-environment.md       # Full rebuild procedure
+    └── recover-from-lost-machine.md     # Machine recovery procedure
 ```
 
-Planned runbooks, to be added as the project progresses:
+### Runbooks
+
+| Runbook | Purpose |
+|---------|---------|
+| [recover-terraform-state.md](runbooks/recover-terraform-state.md) | Roll back the state to a previous version, undelete the state blob, undelete the state container |
+| [recover-keyvault-secret.md](runbooks/recover-keyvault-secret.md) | Undelete a soft-deleted secret, re-provision the Key Vault, or recreate a lost secret |
+| [reprovision-environment.md](runbooks/reprovision-environment.md) | Full rebuild of the Azure environment from Terraform |
+| [recover-from-lost-machine.md](runbooks/recover-from-lost-machine.md) | Recover the developer environment after machine loss |
+
+### Disaster Recovery documents
+
+| Document | Purpose |
+|----------|---------|
+| [disaster-recovery.md](disaster-recovery.md) | Component inventory, criticality classification, RTO/RPO objectives, recovery strategies |
+| [dr-test-log.md](dr-test-log.md) | Record of every DR test executed, with duration, result, and lessons learned |
+
+### Planned runbooks
 
 | Runbook | Target Phase | Description |
 |---------|--------------|-------------|
-| `rotate-credentials.md` | Phase 6 | Rotate Service Principal and Key Vault secrets |
-| `backup-and-restore.md` | Phase 9 | Back up and restore critical data |
-| `incident-response.md` | Phase 5 | Response procedure for common incidents |
+| `rotate-credentials.md` | Phase 10 | Rotate Service Principal and Key Vault secrets |
+| `incident-response.md` | Phase 10 | Response procedure for common incidents |
 | `cost-review.md` | Phase 10 | Monthly cost review procedure |
 
 ---
@@ -206,6 +227,111 @@ the local Docker daemon. To remove it:
 ```bash
 docker rmi jc-sre-databricks-api:latest
 ```
+
+---
+
+## Disaster Recovery Quick Reference
+
+The project has a defined disaster recovery posture. This section is a
+quick reference for the most common scenarios. For the full procedures,
+follow the links to the runbooks.
+
+### Decision tree
+
+```
+              ┌─────────────────────────────────────┐
+              │  What is the problem?               │
+              └──────────────────┬──────────────────┘
+                                 │
+              ┌──────────────────┼──────────────────┐
+              │                  │                  │
+              ▼                  ▼                  ▼
+       ┌────────────┐    ┌────────────┐    ┌────────────┐
+       │ State      │    │ Secret or  │    │ Machine    │
+       │ corrupted  │    │ Key Vault  │    │ lost or    │
+       │ or wrong   │    │ problem    │    │ unusable   │
+       └─────┬──────┘    └─────┬──────┘    └─────┬──────┘
+             │                 │                 │
+             ▼                 ▼                 ▼
+       ┌────────────┐    ┌────────────┐    ┌────────────┐
+       │ recover-   │    │ recover-   │    │ recover-   │
+       │ terraform- │    │ keyvault-  │    │ from-lost- │
+       │ state.md   │    │ secret.md  │    │ machine.md │
+       └────────────┘    └────────────┘    └────────────┘
+```
+
+### Common scenarios
+
+| Scenario | Runbook | Estimated time |
+|----------|---------|----------------|
+| State file corrupted | [recover-terraform-state.md](runbooks/recover-terraform-state.md) (Procedure A) | 15 minutes |
+| State file deleted | [recover-terraform-state.md](runbooks/recover-terraform-state.md) (Procedure B) | 5 minutes |
+| State container deleted | [recover-terraform-state.md](runbooks/recover-terraform-state.md) (Procedure C) | 10 minutes |
+| Secret deleted (soft) | [recover-keyvault-secret.md](runbooks/recover-keyvault-secret.md) (Procedure A) | 5 minutes |
+| Secret missing after `terraform apply` | [recover-keyvault-secret.md](runbooks/recover-keyvault-secret.md) (Procedure B) | 3 minutes |
+| Full environment rebuild | [reprovision-environment.md](runbooks/reprovision-environment.md) | 30-50 minutes |
+| Lost developer machine | [recover-from-lost-machine.md](runbooks/recover-from-lost-machine.md) | 45 minutes - 2 hours |
+
+### Backend protection
+
+The Terraform state backend has the following protections enabled:
+
+| Protection | Setting | Purpose |
+|-----------|---------|---------|
+| Blob versioning | Enabled | Roll back to any previous version |
+| Blob soft delete | 30 days | Recover a deleted state blob |
+| Container soft delete | 30 days | Recover a deleted container |
+
+To verify or re-enable:
+
+```bash
+make protect-tfstate
+```
+
+To list the available versions:
+
+```bash
+make tfstate-versions
+```
+
+### RTO/RPO summary
+
+| Component | RTO | RPO |
+|-----------|-----|-----|
+| Terraform state | 4 hours | 24 hours |
+| Source code | 1 hour | 0 (Git push) |
+| Application Insights secret | 2 hours | 7 days |
+| Service Principal | 4 hours | N/A |
+| Storage Account | 4 hours | 24 hours |
+| Resource Group, VNet, NSG | 2 hours | 0 |
+| Databricks Workspace | 4 hours | N/A |
+| Data (Delta Lake) | 1 hour | 30 days |
+
+The full list is in [disaster-recovery.md](disaster-recovery.md).
+
+### Test log
+
+Every DR test is recorded in [dr-test-log.md](dr-test-log.md). As of
+2026-10-09, three tests have been executed:
+
+| # | Scenario | Status | Duration |
+|---|----------|--------|----------|
+| 1 | Rollback of the Terraform state | Passed | ~15 minutes |
+| 2 | Recovery of a Key Vault secret | Passed | ~3 minutes |
+| 5 | Recovery from a lost machine | Partial | Not measured |
+
+### Out of scope
+
+The following scenarios are documented as out of scope for the current
+subscription (Azure for Students):
+
+- Multi-region failover
+- Geo-redundant storage (GRS, RA-GRS)
+- Automated backup of the Databricks Workspace
+- Azure Site Recovery
+- Backup of historical Application Insights metrics
+
+See [disaster-recovery.md](disaster-recovery.md) for the reasoning.
 
 ---
 
@@ -612,5 +738,8 @@ This is a solo portfolio project. There is no on-call rotation. The escalation p
 - [Security Model](../architecture/security-model.md) — full security posture
 - [AI Integration Strategy](../architecture/adr-004-ai-integration.md) — AI decisions and activation procedure
 - [AKS Local-First Strategy](../architecture/adr-005-aks-local-first.md) — Kubernetes decisions and activation procedure
+- [Disaster Recovery Strategy](../architecture/adr-006-dr-strategy.md) — DR decisions and rationale
+- [Disaster Recovery Reference](disaster-recovery.md) — RTO/RPO objectives and inventory
+- [DR Test Log](dr-test-log.md) — record of executed tests
 - [Troubleshooting](../troubleshooting/) — problem resolution guides
 - [Conventions](../conventions.md) — project standards

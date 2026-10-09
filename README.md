@@ -8,13 +8,13 @@ Azure-Native SRE & Platform Engineering with Databricks, Kubernetes, and AI Inte
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB)](https://python.org)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-Kind-326CE5)](https://kind.sigs.k8s.io)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Phase](https://img.shields.io/badge/Phase-8-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
+[![Phase](https://img.shields.io/badge/Phase-9-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
 
 ---
 
 ## Project Status
 
-**Phase 8 — AKS and Containerized Workloads completed (with documented limitation).**
+**Phase 9 — Disaster Recovery completed.**
 
 | Phase | Description | Status |
 |-------|-------------|--------|
@@ -27,7 +27,8 @@ Azure-Native SRE & Platform Engineering with Databricks, Kubernetes, and AI Inte
 | **Phase 6** | Security: Key Vault, RBAC, Managed Identities, cleanup | Completed |
 | **Phase 7** | AI Integration: executive summaries with fallback strategy | Completed |
 | **Phase 8** | Kubernetes: API on Kind, Prometheus, Grafana (AKS module preserved) | Completed |
-| **Phase 9** | Disaster recovery and resilience | Next |
+| **Phase 9** | Disaster Recovery: RTO/RPO, runbooks, backend protection, tests | Completed |
+| **Phase 10** | Cost optimization and governance | Next |
 
 ---
 
@@ -58,6 +59,7 @@ A modular Azure platform built with Terraform, complemented by a Python data pip
 - **Data engineering** — a functional pipeline ingesting real data from the Brazilian Central Bank, validated with Pandera, transformed with PySpark, and persisted in Delta Lake
 - **AI integration** — executive summary generation with a fallback strategy for environments where Azure OpenAI is not provisionable
 - **Containerized workloads** — a FastAPI application running on Kubernetes (Kind locally, AKS-ready), with Prometheus metrics and Grafana dashboards
+- **Disaster recovery** — documented RTO/RPO objectives, runbooks for common scenarios, backend protection, and validated recovery procedures
 
 The project intentionally does not attempt to be a production platform. It is a demonstration of professional engineering practices applied to a realistic scenario, executed under the constraints of an Azure for Students subscription.
 
@@ -79,6 +81,7 @@ The patterns demonstrated in this project apply to a range of real-world scenari
 | Fallback strategies for restricted environments | Any developer on a constrained subscription or sandbox |
 | Local Kubernetes with Kind + Helm | Any team that wants to develop and test Kubernetes manifests without a cloud cluster |
 | ServiceMonitor-driven metrics | Any Kubernetes workload that needs to be scraped by Prometheus |
+| Reproducibility-based disaster recovery | Any project where infrastructure is code and data is regenerable |
 
 ### When this project is directly applicable
 
@@ -88,6 +91,7 @@ The patterns demonstrated in this project apply to a range of real-world scenari
 - A team transitioning from ad-hoc infrastructure to Terraform with proper module boundaries
 - A developer who wants a reference for running containerized workloads on Kind with the same manifests that run on AKS
 - Anyone who needs a reference for documenting platform limitations honestly
+- A team defining a DR strategy for a project where infrastructure is code and data is reproducible
 
 ### When it is not applicable
 
@@ -110,7 +114,7 @@ The project was designed as a multi-phase initiative. Due to limitations of the 
 
 | Capability | Designed | Delivered | Notes |
 |-----------|----------|-----------|-------|
-| Terraform modules | 7 | **8** | networking, datalake, databricks, monitoring, keyvault, security, ai, aks |
+| Terraform modules | 8 | **8** | networking, datalake, databricks, monitoring, keyvault, security, ai, aks |
 | Network segmentation | Yes | **Yes** | 6 subnets, delegations, service endpoints |
 | Databricks VNet Injection | Yes | **Yes** | SCC, `NoAzureDatabricksRules` |
 | Data pipeline (batch) | Yes | **Yes** | PySpark + Delta, 15 tests passing |
@@ -122,7 +126,7 @@ The project was designed as a multi-phase initiative. Due to limitations of the 
 | Azure OpenAI | Yes | **Code ready** | Quota restriction on for Students |
 | AKS cluster | Yes | **No (Kind substitute)** | Load Balancer cost exceeds credit; Kind used for demonstration |
 | Kubernetes workloads | Yes | **Yes (Kind)** | FastAPI + Prometheus + Grafana running on Kind |
-| Disaster recovery | Planned | **No** | Not started (Phase 9) |
+| Disaster recovery | Yes | **Yes** | RTO/RPO defined, runbooks written, backend protected, 2 tests passed |
 | Cost optimization | Planned | **No** | Not started (Phase 10) |
 
 ### What is fully functional
@@ -131,7 +135,8 @@ The project was designed as a multi-phase initiative. Due to limitations of the 
 - Local data pipeline (runs end-to-end with real data)
 - Observability (metrics flow to Application Insights, alerts configured)
 - Security model (Key Vault, Managed Identity, RBAC all active)
-- **Kubernetes workloads on Kind** (API, Prometheus, Grafana, Ingress)
+- Kubernetes workloads on Kind (API, Prometheus, Grafana, Ingress)
+- Disaster recovery (RTO/RPO, runbooks, backend versioning, tested recovery)
 
 ### What is implemented but not executable in the current environment
 
@@ -141,7 +146,7 @@ The project was designed as a multi-phase initiative. Due to limitations of the 
 
 ### What has not been started
 
-- Disaster recovery and cost optimization (Phases 9 and 10).
+- Cost optimization and governance (Phase 10).
 
 This transparency is intentional. The ADRs document the reasoning behind each limitation.
 
@@ -311,7 +316,7 @@ The diagram below represents the **full target architecture** if all phases were
    │      - variations    │
    │      - monthly_agg   │
    │      - summaries     │
-   └──────────────────────┘
+   └──────────┬───────────┘
               │
               │ read by
               ▼
@@ -445,6 +450,23 @@ The diagram below represents the **full target architecture** if all phases were
 - [x] 15 tests passing (10 previous + 5 new for the API)
 - [x] ADR-005 documenting the local-first strategy
 
+### Phase 9 — Disaster Recovery
+
+- [x] RTO and RPO objectives defined for all components
+- [x] Criticality classification (P0 to P3)
+- [x] Recovery strategies documented per component
+- [x] Blob versioning enabled on the Terraform state backend
+- [x] Blob soft delete enabled (30 days)
+- [x] Container soft delete enabled (30 days)
+- [x] Automated protection script (`scripts/protect-tfstate-backend.sh`)
+- [x] Makefile targets: `protect-tfstate`, `tfstate-versions`
+- [x] Four runbooks created (state, secret, re-provision, lost machine)
+- [x] DR test log created and populated
+- [x] Test 1: state rollback (passed, ~15 minutes)
+- [x] Test 2: Key Vault secret recovery (passed, ~3 minutes)
+- [x] Test 5: lost machine recovery (partial)
+- [x] ADR-006 documenting the DR strategy
+
 ---
 
 ## Kubernetes
@@ -523,11 +545,94 @@ See [Phase 8 — AKS and Containerized Workloads](docs/phases/phase-8-aks.md) fo
 
 ---
 
+## Disaster Recovery
+
+The project has a defined disaster recovery posture, validated with tabletop exercises. The strategy leans on the project's reproducibility rather than on expensive redundancy.
+
+### Principles
+
+- **Define objectives before tools.** RTO and RPO come first.
+- **Prefer reproducibility over redundancy.** Everything that can be regenerated from code is not backed up.
+- **Protect what cannot be regenerated.** The Terraform state is the only irreplaceable artifact.
+- **Document and test.** A runbook that was not executed is a hope.
+
+### RTO/RPO summary
+
+| Component | RTO | RPO |
+|-----------|-----|-----|
+| Terraform state | 4 hours | 24 hours |
+| Source code | 1 hour | 0 (Git push) |
+| Application Insights secret | 2 hours | 7 days |
+| Service Principal | 4 hours | N/A |
+| Storage Account | 4 hours | 24 hours |
+| Resource Group, VNet, NSG | 2 hours | 0 |
+| Databricks Workspace | 4 hours | N/A |
+| Data (Delta Lake) | 1 hour | 30 days |
+
+### Backend protection
+
+The Terraform state backend has blob versioning and soft delete enabled:
+
+| Protection | Setting |
+|-----------|---------|
+| Blob versioning | Enabled |
+| Blob soft delete | 30 days |
+| Container soft delete | 30 days |
+
+```bash
+# Verify or re-enable the protections
+make protect-tfstate
+
+# List available state versions
+make tfstate-versions
+```
+
+### Runbooks
+
+| Scenario | Runbook |
+|----------|---------|
+| State file corrupted | [recover-terraform-state.md](docs/operations/runbooks/recover-terraform-state.md) |
+| State file deleted | [recover-terraform-state.md](docs/operations/runbooks/recover-terraform-state.md) (Procedure B) |
+| Secret deleted | [recover-keyvault-secret.md](docs/operations/runbooks/recover-keyvault-secret.md) |
+| Full environment rebuild | [reprovision-environment.md](docs/operations/runbooks/reprovision-environment.md) |
+| Lost developer machine | [recover-from-lost-machine.md](docs/operations/runbooks/recover-from-lost-machine.md) |
+
+### Tests
+
+Three DR tests were executed and documented:
+
+| # | Scenario | Status | Duration |
+|---|----------|--------|----------|
+| 1 | Rollback of the Terraform state | Passed | ~15 minutes |
+| 2 | Recovery of a Key Vault secret | Passed | ~3 minutes |
+| 5 | Recovery from a lost machine | Partial | Not measured |
+
+See [dr-test-log.md](docs/operations/dr-test-log.md) for the full record.
+
+### Out of scope
+
+The following scenarios are documented as out of scope for the current subscription (Azure for Students):
+
+- Multi-region failover
+- Geo-redundant storage (GRS, RA-GRS)
+- Automated backup of the Databricks Workspace
+- Azure Site Recovery
+
+See [ADR-006](docs/architecture/adr-006-dr-strategy.md) for the reasoning.
+
+### Documentation
+
+- [Disaster Recovery Reference](docs/operations/disaster-recovery.md) — full RTO/RPO inventory
+- [ADR-006 — DR Strategy](docs/architecture/adr-006-dr-strategy.md) — decisions and rationale
+- [DR Test Log](docs/operations/dr-test-log.md) — executed tests
+- [Phase 9 — Disaster Recovery](docs/phases/phase-9-dr.md) — implementation record
+
+---
+
 ## Planned Features
 
-The following phases have not been started:
+The following phase has not been started:
 
-- [ ] Disaster recovery strategy and runbooks (Phase 9)
 - [ ] Cost management and FinOps practices (Phase 10)
 
 ### Improvements pending subscription upgrade
@@ -540,8 +645,7 @@ If the subscription is upgraded to Pay-As-You-Go, the following become possible:
 - [ ] Provision the AKS cluster and run the same workloads on managed Kubernetes
 - [ ] Migrate Workbook and Alert Rules from manual creation to Terraform
 
-None of these require code changes. The infrastructure and pipeline code
-are ready to be activated.
+None of these require code changes. The infrastructure and pipeline code are ready to be activated.
 
 ---
 
@@ -825,7 +929,13 @@ make pipeline-run
 make pipeline-query
 ```
 
-### 9. (Optional) Deploy on Local Kubernetes
+### 9. Protect the Terraform State
+
+```bash
+make protect-tfstate
+```
+
+### 10. (Optional) Deploy on Local Kubernetes
 
 ```bash
 make kind-up
@@ -884,6 +994,13 @@ The API will be available at `http://jc-sre.local`. Grafana at `http://localhost
 | `make kind-logs` | Tail API logs |
 | `make kind-all` | Run the full sequence: cluster + build + deploy |
 
+### Disaster Recovery
+
+| Command | Description |
+|---------|-------------|
+| `make protect-tfstate` | Enable versioning and soft delete on the state backend |
+| `make tfstate-versions` | List available versions of the state file |
+
 > **Warning:** `terraform-apply` and `terraform-destroy` modify or remove Azure resources. Always review the plan before applying.
 
 ---
@@ -937,7 +1054,7 @@ jc-azure-sre-databricks-platform/
 │   └── templates/
 │
 ├── monitoring/
-│   └── slos.md              # SLIs, SLOs, error budget policy
+│   └── slos.md               # SLIs, SLOs, error budget policy
 │
 ├── kubernetes/
 │   ├── kind/                 # Kind cluster configuration (generated)
@@ -947,8 +1064,10 @@ jc-azure-sre-databricks-platform/
 │       └── jc-sre-monitoring/# Monitoring stack (kube-prometheus-stack wrapper)
 │
 ├── security/                 # RBAC and security-related Terraform (module)
+│
 ├── scripts/
 │   ├── setup-local.sh
+│   ├── protect-tfstate-backend.sh
 │   ├── kind-setup.sh
 │   ├── kind-teardown.sh
 │   ├── kind-build-and-load.sh
@@ -967,7 +1086,8 @@ jc-azure-sre-databricks-platform/
     │   ├── phase-5-observability.md
     │   ├── phase-6-security.md
     │   ├── phase-7-ai.md
-    │   └── phase-8-aks.md
+    │   ├── phase-8-aks.md
+    │   └── phase-9-dr.md
     ├── architecture/
     │   ├── README.md
     │   ├── security-model.md
@@ -975,9 +1095,17 @@ jc-azure-sre-databricks-platform/
     │   ├── adr-002-observability-stack.md
     │   ├── adr-003-security-model.md
     │   ├── adr-004-ai-integration.md
-    │   └── adr-005-aks-local-first.md
+    │   ├── adr-005-aks-local-first.md
+    │   └── adr-006-dr-strategy.md
     ├── operations/
-    │   └── README.md
+    │   ├── README.md
+    │   ├── disaster-recovery.md
+    │   ├── dr-test-log.md
+    │   └── runbooks/
+    │       ├── recover-terraform-state.md
+    │       ├── recover-keyvault-secret.md
+    │       ├── reprovision-environment.md
+    │       └── recover-from-lost-machine.md
     └── troubleshooting/
         └── README.md
 ```
@@ -1038,12 +1166,16 @@ Detailed documentation is available under `docs/`:
 | [Phase 6 — Security](docs/phases/phase-6-security.md) | Key Vault, RBAC, Managed Identities, cleanup |
 | [Phase 7 — AI Integration](docs/phases/phase-7-ai.md) | Executive summaries with fallback strategy |
 | [Phase 8 — AKS and Containerized Workloads](docs/phases/phase-8-aks.md) | Kubernetes, Helm, Prometheus, Grafana |
+| [Phase 9 — Disaster Recovery](docs/phases/phase-9-dr.md) | RTO/RPO, runbooks, backend protection, tests |
 | [Security Model](docs/architecture/security-model.md) | Full security posture reference |
 | [ADR-001](docs/architecture/adr-001-databricks-cluster-limitation.md) | Databricks cluster limitation |
 | [ADR-002](docs/architecture/adr-002-observability-stack.md) | Observability stack selection |
 | [ADR-003](docs/architecture/adr-003-security-model.md) | Security model decisions |
 | [ADR-004](docs/architecture/adr-004-ai-integration.md) | AI integration strategy |
 | [ADR-005](docs/architecture/adr-005-aks-local-first.md) | AKS local-first strategy |
+| [ADR-006](docs/architecture/adr-006-dr-strategy.md) | Disaster recovery strategy |
+| [DR Reference](docs/operations/disaster-recovery.md) | RTO/RPO objectives and inventory |
+| [DR Test Log](docs/operations/dr-test-log.md) | Record of executed tests |
 | [Operations](docs/operations/README.md) | Runbooks, Kind setup, post-apply checklist |
 | [Troubleshooting](docs/troubleshooting/README.md) | Known issues and fixes |
 
@@ -1084,8 +1216,8 @@ The AI and AKS modules are preserved but not applied. Their activation procedure
 | **Phase 6** | Security: Key Vault, RBAC, Managed Identities, cleanup | Completed |
 | **Phase 7** | AI Integration: executive summaries with fallback strategy | Completed |
 | **Phase 8** | Kubernetes: API on Kind, Prometheus, Grafana | Completed |
-| **Phase 9** | Disaster recovery and resilience | Next |
-| **Phase 10** | Cost optimization and governance | Planned |
+| **Phase 9** | Disaster Recovery: RTO/RPO, runbooks, backend protection | Completed |
+| **Phase 10** | Cost optimization and governance | Next |
 
 ---
 

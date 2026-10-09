@@ -38,6 +38,10 @@ help:
 	@echo "  make kind-all           - Full setup: cluster + build + deploy"
 	@echo "  make kind-monitoring        - Install Prometheus + Grafana"
 	@echo "  make kind-monitoring-port-forward - Forward Grafana and Prometheus ports"
+	@echo "Disaster Recovery:"
+	@echo "  make protect-tfstate    - Enable versioning and soft delete on the state backend"
+	@echo "  make tfstate-versions   - List available versions of the state file"
+
 # =============================================================================
 # Project targets
 # =============================================================================
@@ -180,3 +184,21 @@ kind-monitoring-port-forward:
 	@echo "Press Ctrl+C to stop."
 	@kubectl port-forward -n jc-sre svc/jc-sre-monitoring-grafana 3000:80 & \
 	 kubectl port-forward -n jc-sre svc/jc-sre-monitoring-kube-prometheus-prometheus 9090:9090
+
+# =============================================================================
+# Disaster Recovery targets
+# =============================================================================
+
+protect-tfstate:
+	@echo "Protecting the Terraform state backend..."
+	@./scripts/protect-tfstate-backend.sh
+
+tfstate-versions:
+	@echo "Listing state file versions..."
+	@az storage blob list \
+	  --container-name tfstate \
+	  --account-name tfstatejcsredatabricks \
+	  --auth-mode login \
+	  --include v \
+	  --query "[?name=='dev.terraform.tfstate'].{Version:versionId, Modified:properties.lastModified, Size:properties.contentLength}" \
+	  -o table
