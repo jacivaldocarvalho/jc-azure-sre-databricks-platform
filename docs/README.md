@@ -12,6 +12,12 @@ Central documentation for the JC-Azure SRE Databricks Platform project.
 | `troubleshooting/` | Guides for common issues and recovery |
 | `conventions.md` | Project-wide standards and conventions |
 
+## Overview Documents
+
+- [Executive Summary](executive-summary.md) — 5-minute overview of the project
+- [Roadmap Journey](roadmap-journey.md) — the story of how the project was built
+- [Cost Analysis](operations/cost-analysis.md) — cost posture and FinOps practices
+
 ## Quick Links
 
 ### Phases
@@ -26,6 +32,7 @@ Central documentation for the JC-Azure SRE Databricks Platform project.
 - [Phase 7 — AI Integration](phases/phase-7-ai.md)
 - [Phase 8 — AKS and Containerized Workloads](phases/phase-8-aks.md)
 - [Phase 9 — Disaster Recovery](phases/phase-9-dr.md)
+- [Phase 10 — Cost Optimization and Governance](phases/phase-10-governance.md)
 
 ### Architecture
 
@@ -39,6 +46,10 @@ Central documentation for the JC-Azure SRE Databricks Platform project.
 - [ADR-004 — AI Integration Strategy](architecture/adr-004-ai-integration.md)
 - [ADR-005 — AKS Local-First Strategy](architecture/adr-005-aks-local-first.md)
 - [ADR-006 — Disaster Recovery Strategy](architecture/adr-006-dr-strategy.md)
+- [ADR-007 — Azure for Students Subscription](architecture/adr-007-azure-for-students.md)
+- [ADR-008 — Three-Environment Structure](architecture/adr-008-three-environments.md)
+- [ADR-009 — Terraform as Infrastructure as Code](architecture/adr-009-terraform.md)
+- [ADR-010 — Network Topology](architecture/adr-010-network-topology.md)
 
 ### Operations
 
