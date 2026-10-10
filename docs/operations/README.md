@@ -694,6 +694,128 @@ az ad app federated-credential delete \
 Recreate it with the exact issuer and subject that Azure DevOps generates.
 
 ---
+## FinOps Practices
+
+Cost management is a first-class concern in this project. The practices
+below keep the spend near zero and prevent orphaned resources.
+
+### Principles
+
+1. **Destroy after each session.** All Azure resources can be destroyed
+   with `make terraform-destroy`. The environment can be recreated in
+   15-25 minutes.
+2. **Local-first.** The data pipeline and Kubernetes workloads run
+   locally. Only what cannot run locally is provisioned in Azure.
+3. **Verify after destroy.** Always confirm that no resources are left
+   behind, especially the Managed Resource Group from Databricks.
+4. **Document every resource.** Each resource has a purpose. Resources
+   that are preserved but not applied (AI, AKS) are commented out.
+5. **Use the cheapest tier that meets the need.** LRS instead of GRS.
+   Standard tier instead of Premium. Free tier where available.
+
+### Orphaned resources after `terraform destroy`
+
+The `terraform destroy` command removes everything managed by Terraform.
+However, some resources are **created by Azure on behalf of a service**
+and are not managed by the Terraform code. These resources are left
+orphaned.
+
+The main example in this project is the **Databricks Managed Resource
+Group** (`dev-sredatabricks-dbw-managed-rg`). It contains:
+
+| Resource | Type | Purpose |
+|----------|------|---------|
+| `devsredatadbw` | Storage Account | DBFS storage |
+| `unity-catalog-access-connector` | Databricks Access Connector | Unity Catalog access |
+
+**These resources are not destroyed by Terraform.** They must be removed
+manually after each destroy.
+
+#### Procedure to remove orphaned resources
+
+After `make terraform-destroy`:
+
+```bash
+# 1. List all resource groups
+az group list --query "[].{Name:name, Location:location}" -o table
+
+# 2. Expected: only `tfstate-rg` should remain (the state backend)
+#    If `dev-sredatabricks-dbw-managed-rg` appears, remove it:
+
+# 3. Remove the managed resource group
+az group delete \
+  --name dev-sredatabricks-dbw-managed-rg \
+  --yes \
+  --no-wait
+
+# 4. Verify the deletion (may take 1-2 minutes)
+az group list --query "[?name=='dev-sredatabricks-dbw-managed-rg'].{Name:name}" -o table
+```
+
+**Why this matters:** the orphaned Managed Resource Group contains a
+Storage Account that continues to be billed (minimally) even when the
+Databricks Workspace no longer exists. Removing it eliminates this
+residual cost.
+
+### Cost monitoring
+
+The Azure for Students subscription does not expose billing data via
+the CLI. Cost must be monitored through the portal:
+
+1. Go to **Cost Management + Billing** > **Cost analysis**
+2. Filter by subscription, resource group, or tag
+3. Set the time range
+
+**Recommended frequency:**
+
+| Period | Action |
+|--------|--------|
+| Weekly | Check the credit balance in the portal |
+| Monthly | Review the cost analysis in `docs/operations/cost-analysis.md` |
+| Quarterly | Audit resources and optimizations |
+
+### Budget alerts
+
+Budget alerts are not configurable via the CLI in the Azure for
+Students subscription. The portal may offer limited functionality.
+
+**Recommendation:** if a paid subscription is used in the future,
+configure a monthly budget with alerts at 50%, 80%, and 100%.
+
+### Cost allocation tags
+
+All resources are tagged with:
+
+- `Environment`: dev, staging, prod
+- `Project`: SRE-Databricks
+- `ManagedBy`: Terraform
+
+For a multi-project or multi-team environment, additional tags would be
+useful:
+
+- `CostCenter`: the cost center responsible for the resource
+- `Owner`: the email or team that owns the resource
+- `Expiration`: the date after which the resource can be removed
+
+**Not applied in the current project** because it is a solo portfolio
+with a single cost center.
+
+### Recommendations for a paid subscription
+
+If the project migrates to a paid subscription, the following
+optimizations become possible:
+
+| Optimization | Estimated saving |
+|--------------|------------------|
+| Auto-scaling AKS nodes to 0 | Up to 100% when idle |
+| Spot instances for batch workloads | Up to 80% for compute |
+| Reserved instances (1-3 years) | Up to 40% |
+| Private Endpoints instead of service endpoints | Cost, not saving |
+| Cost allocation tags and budgets | Visibility, not saving |
+
+See `docs/operations/cost-analysis.md` for the full analysis.
+
+---
 
 ## Routine Checks
 

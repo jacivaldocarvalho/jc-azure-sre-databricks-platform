@@ -8,13 +8,13 @@ Azure-Native SRE & Platform Engineering with Databricks, Kubernetes, and AI Inte
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB)](https://python.org)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-Kind-326CE5)](https://kind.sigs.k8s.io)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Phase](https://img.shields.io/badge/Phase-9-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
+[![Phase](https://img.shields.io/badge/Phase-10-blue)](https://github.com/jacivaldocarvalho/jc-azure-sre-databricks-platform)
 
----
+
 
 ## Project Status
 
-**Phase 9 — Disaster Recovery completed.**
+**Project completed — all 10 phases delivered (with documented limitations).**
 
 | Phase | Description | Status |
 |-------|-------------|--------|
@@ -28,9 +28,12 @@ Azure-Native SRE & Platform Engineering with Databricks, Kubernetes, and AI Inte
 | **Phase 7** | AI Integration: executive summaries with fallback strategy | Completed |
 | **Phase 8** | Kubernetes: API on Kind, Prometheus, Grafana (AKS module preserved) | Completed |
 | **Phase 9** | Disaster Recovery: RTO/RPO, runbooks, backend protection, tests | Completed |
-| **Phase 10** | Cost optimization and governance | Next |
+| **Phase 10** | Governance: cost analysis, FinOps, retroactive ADRs | Completed |
 
----
+> **This project is complete.** The roadmap is closed. What was
+> delivered and what was not delivered (with reasoning) are documented
+> in the phase records and ADRs.
+
 
 ## Problem
 
@@ -45,7 +48,6 @@ Provisioning a data platform on Azure while respecting SRE principles requires s
 
 Most SRE portfolios show isolated pieces of these challenges: a Terraform file, a CI/CD pipeline, a dashboard. This project demonstrates how they integrate.
 
----
 
 ## Solution
 
@@ -63,7 +65,6 @@ A modular Azure platform built with Terraform, complemented by a Python data pip
 
 The project intentionally does not attempt to be a production platform. It is a demonstration of professional engineering practices applied to a realistic scenario, executed under the constraints of an Azure for Students subscription.
 
----
 
 ## Applicability
 
@@ -106,7 +107,6 @@ This is not a production-ready blueprint for the following scenarios:
 
 The distinction is intentional: the project is honest about its scope.
 
----
 
 ## Current State vs. Target State
 
@@ -127,7 +127,7 @@ The project was designed as a multi-phase initiative. Due to limitations of the 
 | AKS cluster | Yes | **No (Kind substitute)** | Load Balancer cost exceeds credit; Kind used for demonstration |
 | Kubernetes workloads | Yes | **Yes (Kind)** | FastAPI + Prometheus + Grafana running on Kind |
 | Disaster recovery | Yes | **Yes** | RTO/RPO defined, runbooks written, backend protected, 2 tests passed |
-| Cost optimization | Planned | **No** | Not started (Phase 10) |
+| Cost optimization | Yes | **Yes** | Cost analysis, FinOps practices, retroactive ADRs |
 
 ### What is fully functional
 
@@ -146,11 +146,8 @@ The project was designed as a multi-phase initiative. Due to limitations of the 
 
 ### What has not been started
 
-- Cost optimization and governance (Phase 10).
+Nothing. All 10 phases were completed. The project is closed.
 
-This transparency is intentional. The ADRs document the reasoning behind each limitation.
-
----
 
 ## Target Architecture (Complete Vision)
 
@@ -203,7 +200,6 @@ The diagram below represents the **full target architecture** if all phases were
                     └─────────────────────┘
 ```
 
----
 
 ## Current Architecture
 
@@ -327,7 +323,6 @@ The diagram below represents the **full target architecture** if all phases were
    └──────────────────────┘
 ```
 
----
 
 ## Implemented Features
 
@@ -467,7 +462,23 @@ The diagram below represents the **full target architecture** if all phases were
 - [x] Test 5: lost machine recovery (partial)
 - [x] ADR-006 documenting the DR strategy
 
----
+### Phase 10 — Cost Optimization and Governance
+
+- [x] Cost analysis document (`docs/operations/cost-analysis.md`)
+- [x] Actual cost estimate (~$0.25 across the project)
+- [x] Theoretical cost estimate for a paid subscription
+- [x] FinOps practices documented in the operations README
+- [x] Orphaned Managed Resource Group identified and removed
+- [x] Procedure to detect orphaned resources documented
+- [x] Executive summary (`docs/executive-summary.md`)
+- [x] Roadmap journey (`docs/roadmap-journey.md`)
+- [x] ADR-007: Azure for Students Subscription (retroactive)
+- [x] ADR-008: Three-Environment Structure (retroactive)
+- [x] ADR-009: Terraform as Infrastructure as Code (retroactive)
+- [x] ADR-010: Network Topology (retroactive)
+- [x] ADR index updated with all 10 ADRs
+- [x] README and documentation indices updated
+- [x] Roadmap officially closed
 
 ## Kubernetes
 
@@ -543,7 +554,6 @@ Full procedure in [ADR-005](docs/architecture/adr-005-aks-local-first.md).
 
 See [Phase 8 — AKS and Containerized Workloads](docs/phases/phase-8-aks.md) for the implementation record.
 
----
 
 ## Disaster Recovery
 
@@ -627,13 +637,10 @@ See [ADR-006](docs/architecture/adr-006-dr-strategy.md) for the reasoning.
 - [DR Test Log](docs/operations/dr-test-log.md) — executed tests
 - [Phase 9 — Disaster Recovery](docs/phases/phase-9-dr.md) — implementation record
 
----
 
-## Planned Features
+## Future Improvements
 
-The following phase has not been started:
-
-- [ ] Cost management and FinOps practices (Phase 10)
+All 10 phases were completed. There are no pending phases.
 
 ### Improvements pending subscription upgrade
 
@@ -647,7 +654,6 @@ If the subscription is upgraded to Pay-As-You-Go, the following become possible:
 
 None of these require code changes. The infrastructure and pipeline code are ready to be activated.
 
----
 
 ## CI/CD
 
@@ -672,7 +678,6 @@ The same validation performed by the pipelines is available locally through `mak
 
 See [Phase 4 — CI/CD](docs/phases/phase-4-cicd.md) for details.
 
----
 
 ## Observability
 
@@ -715,7 +720,6 @@ The Workbook and alert rules were created manually in the portal for iteration s
 
 See [Phase 5 — Observability](docs/phases/phase-5-observability.md) for details.
 
----
 
 ## Security
 
@@ -766,7 +770,6 @@ The full security posture is documented in [docs/architecture/security-model.md]
 
 See [Phase 6 — Security](docs/phases/phase-6-security.md) for the implementation record.
 
----
 
 ## AI Integration
 
@@ -835,7 +838,6 @@ See [ADR-004](docs/architecture/adr-004-ai-integration.md) for the full decision
 
 See [Phase 7 — AI Integration](docs/phases/phase-7-ai.md) for the implementation record.
 
----
 
 ## Prerequisites
 
@@ -870,7 +872,6 @@ You also need:
 - Azure DevOps pipelines cannot run on hosted agents (billing restrictions). See [Phase 4](docs/phases/phase-4-cicd.md).
 - AKS cannot be provisioned (continuous cost of the Load Balancer exceeds the remaining credit). See [ADR-005](docs/architecture/adr-005-aks-local-first.md).
 
----
 
 ## Quick Start
 
@@ -946,7 +947,6 @@ make kind-monitoring
 
 The API will be available at `http://jc-sre.local`. Grafana at `http://localhost:3000` (admin / prom-operator).
 
----
 
 ## Make Commands
 
@@ -1003,7 +1003,6 @@ The API will be available at `http://jc-sre.local`. Grafana at `http://localhost
 
 > **Warning:** `terraform-apply` and `terraform-destroy` modify or remove Azure resources. Always review the plan before applying.
 
----
 
 ## Project Structure
 
@@ -1076,6 +1075,8 @@ jc-azure-sre-databricks-platform/
 │
 └── docs/
     ├── README.md
+    ├── executive-summary.md
+    ├── roadmap-journey.md
     ├── conventions.md
     ├── phases/
     │   ├── phase-0-foundation.md
@@ -1087,7 +1088,8 @@ jc-azure-sre-databricks-platform/
     │   ├── phase-6-security.md
     │   ├── phase-7-ai.md
     │   ├── phase-8-aks.md
-    │   └── phase-9-dr.md
+    │   ├── phase-9-dr.md
+    │   └── phase-10-governance.md
     ├── architecture/
     │   ├── README.md
     │   ├── security-model.md
@@ -1096,9 +1098,14 @@ jc-azure-sre-databricks-platform/
     │   ├── adr-003-security-model.md
     │   ├── adr-004-ai-integration.md
     │   ├── adr-005-aks-local-first.md
-    │   └── adr-006-dr-strategy.md
+    │   ├── adr-006-dr-strategy.md
+    │   ├── adr-007-azure-for-students.md
+    │   ├── adr-008-three-environments.md
+    │   ├── adr-009-terraform.md
+    │   └── adr-010-network-topology.md
     ├── operations/
     │   ├── README.md
+    │   ├── cost-analysis.md
     │   ├── disaster-recovery.md
     │   ├── dr-test-log.md
     │   └── runbooks/
@@ -1110,7 +1117,6 @@ jc-azure-sre-databricks-platform/
         └── README.md
 ```
 
----
 
 ## Infrastructure Overview
 
@@ -1147,7 +1153,6 @@ All resources are tagged with:
 | private_endpoints | 10.0.5.0/24 | Private endpoints for PaaS |
 | databricks_private | 10.0.6.0/24 | Databricks private subnet (delegated) |
 
----
 
 ## Documentation
 
@@ -1156,6 +1161,8 @@ Detailed documentation is available under `docs/`:
 | Document | Description |
 |----------|-------------|
 | [Documentation Index](docs/README.md) | Entry point for all documentation |
+| [Executive Summary](docs/executive-summary.md) | 5-minute overview of the project |
+| [Roadmap Journey](docs/roadmap-journey.md) | The story of the project, phase by phase |
 | [Conventions](docs/conventions.md) | Project standards and conventions |
 | [Phase 0 — Foundation](docs/phases/phase-0-foundation.md) | Project setup |
 | [Phase 1 — Base Network](docs/phases/phase-1-network.md) | Network provisioning |
@@ -1167,6 +1174,7 @@ Detailed documentation is available under `docs/`:
 | [Phase 7 — AI Integration](docs/phases/phase-7-ai.md) | Executive summaries with fallback strategy |
 | [Phase 8 — AKS and Containerized Workloads](docs/phases/phase-8-aks.md) | Kubernetes, Helm, Prometheus, Grafana |
 | [Phase 9 — Disaster Recovery](docs/phases/phase-9-dr.md) | RTO/RPO, runbooks, backend protection, tests |
+| [Phase 10 — Cost Optimization and Governance](docs/phases/phase-10-governance.md) | Cost analysis, FinOps, retroactive ADRs |
 | [Security Model](docs/architecture/security-model.md) | Full security posture reference |
 | [ADR-001](docs/architecture/adr-001-databricks-cluster-limitation.md) | Databricks cluster limitation |
 | [ADR-002](docs/architecture/adr-002-observability-stack.md) | Observability stack selection |
@@ -1174,26 +1182,33 @@ Detailed documentation is available under `docs/`:
 | [ADR-004](docs/architecture/adr-004-ai-integration.md) | AI integration strategy |
 | [ADR-005](docs/architecture/adr-005-aks-local-first.md) | AKS local-first strategy |
 | [ADR-006](docs/architecture/adr-006-dr-strategy.md) | Disaster recovery strategy |
+| [ADR-007](docs/architecture/adr-007-azure-for-students.md) | Azure for Students subscription |
+| [ADR-008](docs/architecture/adr-008-three-environments.md) | Three-environment structure |
+| [ADR-009](docs/architecture/adr-009-terraform.md) | Terraform as Infrastructure as Code |
+| [ADR-010](docs/architecture/adr-010-network-topology.md) | Network topology |
+| [Cost Analysis](docs/operations/cost-analysis.md) | Cost posture and FinOps practices |
 | [DR Reference](docs/operations/disaster-recovery.md) | RTO/RPO objectives and inventory |
 | [DR Test Log](docs/operations/dr-test-log.md) | Record of executed tests |
 | [Operations](docs/operations/README.md) | Runbooks, Kind setup, post-apply checklist |
 | [Troubleshooting](docs/troubleshooting/README.md) | Known issues and fixes |
 
----
 
 ## Cost Management
 
-The project runs on a constrained budget. Controls in place:
+The project runs on a constrained budget. See [Cost Analysis](docs/operations/cost-analysis.md)
+for the full analysis. Controls in place:
 
-- Databricks clusters with aggressive auto-termination (when provisionable)
-- Only necessary resources kept active
 - All Azure resources can be destroyed with `make terraform-destroy`
 - Data pipeline runs locally, avoiding compute costs in the cloud
 - AI summaries use deterministic fallback (no token costs in current environment)
 - Kubernetes workloads run on Kind (no cloud cost)
-- Azure Cost Management for monitoring (planned for Phase 10)
+- Orphaned resources are detected and removed after each `terraform destroy`
+- The state backend is the only always-active resource (~$0.02/month)
 
----
+**Estimated total cost across the project:** ~$0.25.
+
+**Monthly cost with destroy cycles:** < $0.03.
+
 
 ## Manual Resources
 
@@ -1201,9 +1216,10 @@ Some resources were created manually in the Azure portal (Workbook, Action Group
 
 The AI and AKS modules are preserved but not applied. Their activation procedures are documented in [ADR-004](docs/architecture/adr-004-ai-integration.md) and [ADR-005](docs/architecture/adr-005-aks-local-first.md).
 
----
 
-## Roadmap
+## Roadmap (Closed)
+
+The project was executed in 10 phases. The roadmap is now **closed**.
 
 | Phase | Description | Status |
 |-------|-------------|--------|
@@ -1217,9 +1233,12 @@ The AI and AKS modules are preserved but not applied. Their activation procedure
 | **Phase 7** | AI Integration: executive summaries with fallback strategy | Completed |
 | **Phase 8** | Kubernetes: API on Kind, Prometheus, Grafana | Completed |
 | **Phase 9** | Disaster Recovery: RTO/RPO, runbooks, backend protection | Completed |
-| **Phase 10** | Cost optimization and governance | Next |
+| **Phase 10** | Governance: cost analysis, FinOps, retroactive ADRs | Completed |
 
----
+For a narrative version of the journey, see
+[Roadmap Journey](docs/roadmap-journey.md). For a 5-minute overview,
+see [Executive Summary](docs/executive-summary.md).
+
 
 ## Contributing
 
@@ -1231,20 +1250,17 @@ The AI and AKS modules are preserved but not applied. Their activation procedure
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
----
 
 ## License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
----
 
 ## Author
 
 **Jacivaldo Carvalho**
 Telecommunications Engineer | DevOps | SRE | Networking
 
----
 
 ## Acknowledgments
 
